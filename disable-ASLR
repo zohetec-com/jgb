@@ -1,0 +1,3 @@
+#!/bin/bash
+# https://stackoverflow.com/questions/78136716/addresssanitizerdeadlysignal-from-fsanitize-address-flag
+echo 0 | sudo tee /proc/sys/kernel/randomize_va_space
