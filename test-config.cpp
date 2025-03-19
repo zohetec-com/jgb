@@ -35,6 +35,7 @@ int main()
     test_get_dir();
 
     jgb::config* conf = jgb::config_factory::create("test.json");
+    std::cout << "[TEST]" << conf << std::endl;
 
 #if 0
     // 异常处理？

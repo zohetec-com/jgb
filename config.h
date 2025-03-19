@@ -4,6 +4,8 @@
 #include <memory>
 #include <list>
 #include <inttypes.h>
+#include <iostream>
+#include <sstream>
 #include <stdlib.h>
 #include <string.h>
 #include "error.h"
@@ -28,28 +30,41 @@ public:
         object
     };
 
-    value(data_type type, int len=1)
+    value(data_type type, int len = 1, bool is_array = false, bool is_bool = false)
     {
         jgb_assert(type == data_type::integer
                    || type == data_type::real
                    || type == data_type::string
                    || type == data_type::object);
-        if(len > 0 && len <= object_len_max)
+
+        if(len > object_len_max)
         {
-            type_ = type;
-            len_ = len;
+            jgb_warning("数组长度: %d，超限！将截断处理！", len);
+            len = object_len_max;
+        }
+
+        if(len > 0)
+        {
             int_ = new int64_t[len];
             jgb_assert(int_);
         }
+
+        type_ = type;
+        len_ = len;
+        if(len > 1)
+        {
+            is_array = true;
+        }
         else
         {
-            type_ = type;
-            len_ = 0;
-            int_ = nullptr;
+            is_array_ = is_array;
         }
+        is_bool_ = is_bool;
     }
 
     ~value();
+
+    friend std::ostream& operator<<(std::ostream& os, const value* val);
 
     bool valid()
     {
@@ -91,8 +106,10 @@ public:
     int len_;
     bool valid_;
 
-private:
-    //value() {}
+    // TODO:优先采用 schema 定义。
+    // 处理长度为 1 的情况。
+    bool is_array_;
+    bool is_bool_;
 };
 
 class pair
@@ -111,6 +128,8 @@ public:
         delete value_;
     }
 
+    friend std::ostream& operator<<(std::ostream& os, const pair* pr);
+
 public:
     const char* name_;
     value* value_;
@@ -125,6 +144,8 @@ public:
             delete i;
         }
     }
+
+    friend std::ostream& operator<<(std::ostream& os, const config* conf);
 
     //int set_value(const char* path, const value& val);
 

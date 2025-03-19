@@ -37,7 +37,7 @@ static jgb::value* create_array(json_t* json)
         switch (type0) {
         case JSON_OBJECT:
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::object, size);
+            jgb::value* val = new jgb::value(jgb::value::data_type::object, size, true);
             for (i = 0; i < size; i++)
             {
                 json_sub = json_array_get(json, i);
@@ -54,7 +54,7 @@ static jgb::value* create_array(json_t* json)
         }
         case JSON_STRING:
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::string, size);
+            jgb::value* val = new jgb::value(jgb::value::data_type::string, size, true);
             for (i = 0; i < size; i++)
             {
                 json_sub = json_array_get(json, i);
@@ -65,7 +65,7 @@ static jgb::value* create_array(json_t* json)
         }
         case JSON_INTEGER:
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::integer, size);
+            jgb::value* val = new jgb::value(jgb::value::data_type::integer, size, true);
             for (i = 0; i < size; i++)
             {
                 json_sub = json_array_get(json, i);
@@ -75,7 +75,7 @@ static jgb::value* create_array(json_t* json)
         }
         case JSON_REAL:
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::real, size);
+            jgb::value* val = new jgb::value(jgb::value::data_type::real, size, true);
             for (i = 0; i < size; i++)
             {
                 json_sub = json_array_get(json, i);
@@ -86,7 +86,7 @@ static jgb::value* create_array(json_t* json)
         case JSON_TRUE:
         case JSON_FALSE:
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::integer, size);
+            jgb::value* val = new jgb::value(jgb::value::data_type::integer, size, true, true);
             for (i = 0; i < size; i++)
             {
                 json_sub = json_array_get(json, i);
@@ -126,7 +126,7 @@ static config* create_config(json_t* json)
         {
             case JSON_OBJECT:
             {
-                jgb::value* val = new jgb::value(jgb::value::data_type::object, 1);
+                jgb::value* val = new jgb::value(jgb::value::data_type::object);
                 val->conf_[0] = create_config(json_sub);
                 conf->conf_.push_back(new pair(key, val));
             }
@@ -186,6 +186,11 @@ static config* create(json_t* json)
 {
     config* conf = nullptr;
     jgb_assert(json);
+#ifdef DEBUG
+    char* json_text = json_dumps(json, 0);
+    jgb_debug("json: %s", json_text);
+    free(json_text);
+#endif
     if(json_typeof(json) == JSON_OBJECT)
     {
         conf = create_config(json);
