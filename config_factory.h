@@ -11,6 +11,8 @@ class config_factory
 public:
     static config* create(const char* buf, int len);
     static config* create(const char* file_path);
+    static bool update(config* conf, const char* buf, int len);
+    static bool update(config* conf, const char* file_path);
 };
 
 } // namespace jgb

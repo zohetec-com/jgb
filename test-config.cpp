@@ -32,10 +32,33 @@ int test_get_dir()
 
 int main()
 {
+    // 检查 assert(0) 是否工作。
+    //jgb_assert(0);
+
     test_get_dir();
 
+    // 从 json 文档创建 config 对象。
     jgb::config* conf = jgb::config_factory::create("test.json");
     std::cout << "[TEST]" << conf << std::endl;
+
+    jgb::pair* pr = conf->find("p8");
+    jgb_assert(pr);
+    jgb_assert(pr->value_->type_ == jgb::value::data_type::real);
+
+    // 验证：比较整型数和浮点数。
+    {
+        int64_t int_v = 2;
+        double  real_v = 2.0;
+
+        jgb_assert(int_v == real_v);
+
+        real_v = 2.1;
+        jgb_assert(int_v != real_v);
+    }
+
+    // 以 json 文档更新 config。
+    bool changed = jgb::config_factory::update(conf, "update.json");
+    jgb_assert(changed);
 
 #if 0
     // 异常处理？

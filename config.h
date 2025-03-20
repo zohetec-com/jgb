@@ -140,9 +140,25 @@ class config
 public:
     ~config()
     {
-        for (auto & i : conf_) {
+        for (auto & i : conf_)
+        {
             delete i;
         }
+    }
+
+    pair* find(const char* name)
+    {
+        if(name)
+        {
+            for (auto it = conf_.begin(); it != conf_.end(); ++it)
+            {
+                if(!strcmp(name, (*it)->name_))
+                {
+                    return *it;
+                }
+            }
+        }
+        return nullptr;
     }
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
