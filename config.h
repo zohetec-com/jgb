@@ -24,6 +24,7 @@ class value
 public:
     enum class data_type
     {
+        none,
         integer,
         real,
         string,
@@ -32,14 +33,9 @@ public:
 
     value(data_type type, int len = 1, bool is_array = false, bool is_bool = false)
     {
-        jgb_assert(type == data_type::integer
-                   || type == data_type::real
-                   || type == data_type::string
-                   || type == data_type::object);
-
         if(len > object_len_max)
         {
-            jgb_warning("数组长度: %d，超限！将截断处理！", len);
+            jgb_warning("请求创建数组，长度超限，已截断处理！{ len = %d，object_len_max = %d }", len, object_len_max);
             len = object_len_max;
         }
 
@@ -48,18 +44,61 @@ public:
             int_ = new int64_t[len];
             jgb_assert(int_);
         }
+        else
+        {
+            int_ = nullptr;
+        }
 
         type_ = type;
         len_ = len;
         if(len > 1)
         {
-            is_array = true;
+            is_array_ = true;
         }
         else
         {
             is_array_ = is_array;
         }
         is_bool_ = is_bool;
+    }
+
+    int reinit(data_type type, int len, bool is_array, bool is_bool)
+    {
+        if(type_ == data_type::none)
+        {
+            if(len > 0)
+            {
+                if(len > object_len_max)
+                {
+                    jgb_warning("请求创建数组，长度超限，已截断处理！请求 %d，最大 %d", len, object_len_max);
+                    len = object_len_max;
+                }
+
+                int_ = new int64_t[len];
+                jgb_assert(int_);
+
+                type_ = type;
+                len_ = len;
+                if(len > 1)
+                {
+                    is_array = true;
+                }
+                else
+                {
+                    is_array_ = is_array;
+                }
+                is_bool_ = is_bool;
+            }
+            else
+            {
+                return JGB_ERR_INVALID;
+            }
+        }
+        else
+        {
+            // TODO：需要支持重新初始化吗？
+            return JGB_ERR_DENIED;
+        }
     }
 
     ~value();
@@ -101,9 +140,16 @@ public:
     // 是否支持改变长度？
     //  -- 预料大部分的场景不需要，但仍应该提供支持。
     //  -- 考虑到大部分的场景不需要，未减小资源占用，避免直接使用 std::vector。
-    // 数组的 valid：必须初始化全部元素。
+
 
     int len_;
+
+    // 指示 int_/real_ 中存储的内容是否有效：
+    //   - true：有效，内容可以使用。
+    //   - false：无效，内容不可使用。
+    // 应用场景1：
+    //   - 在规格文件中定义参数 p 的类型为 int，在配置文件中设置 p 初值为 null。
+    //   - 期望：所创建的 p 参数的 valid_ 应为 false。
     bool valid_;
 
     // TODO:优先采用 schema 定义。

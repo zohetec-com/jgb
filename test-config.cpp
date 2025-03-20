@@ -39,7 +39,7 @@ int main()
 
     // 从 json 文档创建 config 对象。
     jgb::config* conf = jgb::config_factory::create("test.json");
-    std::cout << "[TEST]" << conf << std::endl;
+    std::cout << "[ORIGIN]" << conf << std::endl;
 
     jgb::pair* pr = conf->find("p8");
     jgb_assert(pr);
@@ -59,6 +59,8 @@ int main()
     // 以 json 文档更新 config。
     bool changed = jgb::config_factory::update(conf, "update.json");
     jgb_assert(changed);
+
+    std::cout << "[UPDATED]" << conf << std::endl;
 
 #if 0
     // 异常处理？

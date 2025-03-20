@@ -34,9 +34,12 @@ std::ostream& operator<<(std::ostream& os, const value* val)
         os << '[';
     }
 
-    switch (val->type_) {
+    switch (val->type_)
+    {
+        case value::data_type::none:
+            os << "null";
+            break;
         case value::data_type::integer:
-        {
             for(int i=0; i<val->len_; i++)
             {
                 if(!val->is_bool_)
@@ -59,10 +62,8 @@ std::ostream& operator<<(std::ostream& os, const value* val)
                     os << ',';
                 }
             }
-        }
-        break;
+            break;
         case value::data_type::real:
-        {
             for(int i=0; i<val->len_; i++)
             {
                 os << val->real_[i];
@@ -71,10 +72,8 @@ std::ostream& operator<<(std::ostream& os, const value* val)
                     os << ',';
                 }
             }
-        }
-        break;
+            break;
         case value::data_type::string:
-        {
             for(int i=0; i<val->len_; i++)
             {
                 os << '"' << val->str_[i] << '"';
@@ -83,10 +82,8 @@ std::ostream& operator<<(std::ostream& os, const value* val)
                     os << ',';
                 }
             }
-        }
-        break;
+            break;
         case value::data_type::object:
-        {
             for(int i=0; i<val->len_; i++)
             {
                 os << val->conf_[i];
@@ -95,8 +92,7 @@ std::ostream& operator<<(std::ostream& os, const value* val)
                     os << ',';
                 }
             }
-        }
-        break;
+            break;
     }
 
     if(val->is_array_)
