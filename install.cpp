@@ -26,11 +26,14 @@ extern "C" int jgb_set_conf_dir(const char* d)
 
 static int create_app_conf(const char* appname)
 {
+    (void) appname;
     return 0;
 }
 
 static int app_init(const char* appname, const char* libfile)
 {
+    (void) appname;
+    (void) libfile;
     return 0;
 }
 
