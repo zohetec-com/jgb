@@ -1,7 +1,7 @@
 #include "helper.h"
 #include "config_factory.h"
 
-int test_get_dir()
+void test_get_dir()
 {
     const char* path = "/p7///p78[1]/";
     const char* s = path;
@@ -26,17 +26,10 @@ int test_get_dir()
     jgb_assert(!r);
     jgb_assert(*s == '\0');
     jgb_assert(*e == '\0');
-
-    return 0;
 }
 
-int main()
+void test_create_update()
 {
-    // 检查 assert(0) 是否工作。
-    //jgb_assert(0);
-
-    test_get_dir();
-
     // 从 json 文档创建 config 对象。
     jgb::config* conf = jgb::config_factory::create("test.json");
     std::cout << "[ORIGIN]" << conf << std::endl;
@@ -91,5 +84,23 @@ int main()
     jgb_assert(conf->get_value("/p7/p4").int_[2] == 3);
 #endif
     delete conf;
+}
+
+void test_get_dev_info()
+{
+    jgb::config* conf = jgb::config_factory::create("get_dev_info.json");
+    std::cout << "[get_dev_info]" << conf << std::endl;
+    delete conf;
+}
+
+int main()
+{
+    // 检查 assert(0) 是否工作。
+    //jgb_assert(0);
+
+    test_get_dir();
+    test_create_update();
+    test_get_dev_info();
+
     return 0;
 }
