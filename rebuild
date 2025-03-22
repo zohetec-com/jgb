@@ -1,6 +1,0 @@
-#!/bin/bash
-#clean_cmake
-rm -rvf CMakeCache.txt build-debug
-#cmake -DCMAKE_CXX_FLAGS="-I/home/hzm/jgb/usr/local/include" -DCMAKE_EXE_LINKER_FLAGS="-L/home/hzm/jgb/usr/local/lib"  -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_CXX_FLAGS="-I/home/hzm/jgb/usr/local/include -DDEBUG" -DCMAKE_EXE_LINKER_FLAGS="-L/home/hzm/jgb/usr/local/lib"  -S . -B build-debug -DCMAKE_BUILD_TYPE=Debug
-cmake --build build-debug
