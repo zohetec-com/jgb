@@ -136,9 +136,9 @@ std::ostream& operator<<(std::ostream& os, const pair* pr)
 std::ostream& operator<<(std::ostream& os, const config* conf)
 {
     os << '{';
-    int n = conf->conf_.size();
+    int n = conf->pair_.size();
     int nn = 0;
-    for (auto & i : conf->conf_) {
+    for (auto & i : conf->pair_) {
         os << i;
         ++ nn;
         if(nn < n)

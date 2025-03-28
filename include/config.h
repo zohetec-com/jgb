@@ -54,7 +54,7 @@ public:
         object
     };
 
-    value(data_type type, int len = 1, bool is_array = false, bool is_bool = false)
+    value(data_type type = data_type::none, int len = 1, bool is_array = false, bool is_bool = false)
     {
         if(len > object_len_max)
         {
@@ -83,6 +83,7 @@ public:
             is_array_ = is_array;
         }
         is_bool_ = is_bool;
+        valid_ = false;
     }
 
     int reinit(data_type type, int len, bool is_array, bool is_bool)
@@ -209,7 +210,7 @@ class config
 public:
     ~config()
     {
-        for (auto & i : conf_)
+        for (auto & i : pair_)
         {
             delete i;
         }
@@ -219,7 +220,7 @@ public:
     {
         if(name)
         {
-            for (auto it = conf_.begin(); it != conf_.end(); ++it)
+            for (auto it = pair_.begin(); it != pair_.end(); ++it)
             {
                 if(!strcmp(name, (*it)->name_))
                 {
@@ -235,7 +236,7 @@ public:
     //int set_value(const char* path, const value& val);
 
 public:
-    std::list<pair*> conf_;
+    std::list<pair*> pair_;
 };
 
 }
