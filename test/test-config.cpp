@@ -1,6 +1,16 @@
 #include "helper.h"
 #include "config_factory.h"
 
+// https://stackoverflow.com/questions/62814873/is-it-possible-to-make-variable-truly-read-only-in-c
+void test_const()
+{
+    static const jgb::value val_null;
+    jgb::value* val = (jgb::value*) &val_null;
+    jgb_assert(!val->valid_);
+    val->valid_ = true;
+    jgb_assert(val->valid_);
+}
+
 void test_get_dir()
 {
     const char* path = "/p7///p78[1]/";
@@ -97,7 +107,34 @@ int main()
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
+    static jgb::value* null_val = (jgb::value*) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+    jgb_debug("{ null_val->valid_ = %d }", null_val->valid());
+    null_val->valid_ = 1;
+    return 0;
 
+    jgb_debug("{ sizeof(int64_t*) = %ld}", sizeof(int64_t*));
+    jgb_debug("{ sizeof(jgb::value::data_type) = %ld}", sizeof(jgb::value::data_type));
+    jgb_debug("{ sizeof(int) = %ld}", sizeof(int));
+    jgb_debug("{ sizeof(bool) = %ld}", sizeof(bool));
+    jgb_debug("{ sizeof(int64_t) = %ld}", sizeof(int64_t));
+
+    int64_t x = 0x0001020304050607;
+    jgb_debug("{ x = %ld}", x);
+
+    jgb::value val;
+    jgb_debug("{ sizeof(value) = %lu }", sizeof(val));
+
+    jgb::value* pval = (jgb::value*) 0;
+    jgb_debug("{ offset int_ %u }", (uint) (intptr_t) &pval->int_);
+    jgb_debug("{ offset type_ %u }", (uint) (intptr_t) &pval->type_);
+    jgb_debug("{ offset len_ %u }", (uint) (intptr_t) &pval->len_);
+    jgb_debug("{ offset valid_ %u }", (uint) (intptr_t) &pval->valid_);
+    jgb_debug("{ offset is_array_ %u }", (uint) (intptr_t) &pval->is_array_);
+    jgb_debug("{ offset is_bool_ %u }", (uint) (intptr_t) &pval->is_bool_);
+
+    return 0;
+
+    test_const();
     test_get_dir();
     test_create_update();
     test_get_dev_info();
