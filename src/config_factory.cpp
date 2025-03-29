@@ -203,14 +203,14 @@ static config* create_config(json_t* json)
 
     json_object_foreach(json, key, json_val)
     {
-        jgb_bug("{ key = %s }", key);
+        jgb_debug("{ key = %s }", key);
         switch (json_typeof(json_val))
         {
             case JSON_OBJECT:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::object);
                     val->conf_[0] = create_config(json_val);
-                    conf->conf_.push_back(new pair(key, val));
+                    conf->pair_.push_back(new pair(key, val));
                 }
                 break;
             case JSON_ARRAY:
@@ -218,7 +218,7 @@ static config* create_config(json_t* json)
                     jgb::value* val = create_array(json_val);
                     if(val)
                     {
-                        conf->conf_.push_back(new pair(key, val));
+                        conf->pair_.push_back(new pair(key, val));
                     }
                 }
                 break;
@@ -226,21 +226,21 @@ static config* create_config(json_t* json)
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::string);
                     val->str_[0] = strdup(json_string_value(json_val));
-                    conf->conf_.push_back(new pair(key, val));
+                    conf->pair_.push_back(new pair(key, val));
                 }
                 break;
             case JSON_INTEGER:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::integer);
                     val->int_[0] = json_integer_value(json_val);
-                    conf->conf_.push_back(new pair(key, val));
+                    conf->pair_.push_back(new pair(key, val));
                 }
                 break;
             case JSON_REAL:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::real);
                     val->real_[0] = json_real_value(json_val);
-                    conf->conf_.push_back(new pair(key, val));
+                    conf->pair_.push_back(new pair(key, val));
                 }
                 break;
             case JSON_TRUE:
@@ -249,13 +249,13 @@ static config* create_config(json_t* json)
                     // TODO：结合 schema 信息使用，适配参数（需要）使用别名的场景。
                     jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, true);
                     val->int_[0] = json_typeof(json_val) == JSON_TRUE;
-                    conf->conf_.push_back(new pair(key, val));
+                    conf->pair_.push_back(new pair(key, val));
                 }
                 break;
             case JSON_NULL:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::none);
-                    conf->conf_.push_back(new pair(key, val));
+                    conf->pair_.push_back(new pair(key, val));
                 }
                 break;
             default:

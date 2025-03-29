@@ -33,15 +33,16 @@
 #define jgb_notice(fmt, ...)    fprintf(stderr, "[%s:%d][NOTICE] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_warning(fmt, ...)   fprintf(stderr, "[%s:%d][WARNING] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_error(fmt, ...)     fprintf(stderr, "[%s:%d][ERROR] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+
+// 调试的特例
+#define jgb_function()          fprintf(stderr, "[%s:%d][DEBUG] call %s\n", __FILE__, __LINE__, __FUNCTION__)
+#define jgb_mark()              fprintf(stderr, "[%s:%d][DEBUG]\n", __FILE__, __LINE__)
+
 // 错误的特例
 #define jgb_bug(fmt, ...)       fprintf(stderr, "[%s:%d][BUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_fail(fmt, ...)      fprintf(stderr, "[%s:%d][FAIL] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_fatal(fmt, ...)     fprintf(stderr, "[%s:%d][FATAL] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #define jgb_assert(x)           assert(x)
-
-#define jgb_safe_delete_object(p)       do{ delete p; p=NULL; } while(0)
-#define jgb_safe_delete_array(p)        do{ delete[] p; p=NULL; } while(0)
-#define jgb_safe_free(p)                do{ if(p){ free(p); p=NULL; } } while(0)
 
 #endif // DEBUG_H
