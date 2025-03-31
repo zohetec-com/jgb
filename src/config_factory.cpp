@@ -421,10 +421,10 @@ static bool update_array(value* val, json_t* json)
                     //jgb_assert(json_typeof(json_val) == JSON_INTEGER);
                     new_real = json_integer_value(json_val);
                 }
-                jgb_bug("%f => %f", val->real_[i], new_real);
+                jgb_debug("%f => %f", val->real_[i], new_real);
                 if(val->real_[i] != new_real)
                 {
-                    jgb_bug("%f => %f", val->real_[i], new_real);
+                    jgb_debug("%f => %f", val->real_[i], new_real);
                     val->real_[i] = new_real;
                     ++ count;
                 }
