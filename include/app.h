@@ -27,6 +27,8 @@ public:
     std::list<app_info> app_info_;
     const char* conf_dir;
 
+    static const int current_app_callback_version = CURRENT_APP_VERSION();
+
 private:
     app();
 };

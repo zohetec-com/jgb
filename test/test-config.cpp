@@ -36,7 +36,7 @@ static void test_value()
 static void test_null_value()
 {
     static jgb::value* null_val = (jgb::value*) "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
-    jgb_debug("{ null_val->valid_ = %d }", null_val->valid());
+    jgb_debug("{ null_val->valid_ = %d }", null_val->valid_);
     //null_val->valid_ = 1;
 }
 

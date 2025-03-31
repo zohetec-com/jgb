@@ -50,6 +50,51 @@ value::~value()
     }
 }
 
+value::value(data_type type, int len, bool is_array, bool is_bool)
+{
+    if(len > object_len_max)
+    {
+        jgb_warning("请求创建数组，长度超限，已截断处理！{ len = %d，object_len_max = %d }", len, object_len_max);
+        len = object_len_max;
+    }
+
+    if(len > 0)
+    {
+        int_ = new int64_t[len];
+        jgb_assert(int_);
+    }
+    else
+    {
+        int_ = nullptr;
+    }
+
+    type_ = type;
+    len_ = len;
+    if(len > 1)
+    {
+        is_array_ = true;
+    }
+    else
+    {
+        is_array_ = is_array;
+    }
+    is_bool_ = is_bool;
+    valid_ = false;
+}
+
+pair::pair(const char* name, value* value)
+{
+    // 疑问：对 name 和 value 区别对待，这么做合适吗？
+    name_ = strdup(name);
+    value_ = value;
+}
+
+pair::~pair()
+{
+    free((void*) name_);
+    delete value_;
+}
+
 std::ostream& operator<<(std::ostream& os, const value* val)
 {
     if(val->is_array_)
@@ -152,6 +197,10 @@ std::ostream& operator<<(std::ostream& os, const config* conf)
     }
     os << '}';
     return os;
+}
+
+config::config()
+{
 }
 
 config::~config()

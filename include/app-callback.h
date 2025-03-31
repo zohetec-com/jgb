@@ -8,8 +8,12 @@ typedef struct jgb_task_callback
     void (*exit)(void* conf);
 } jgb_task_callback_t;
 
+#define MAKE_APP_VERSION(major,minor)   ((major<<8)|(minor & 0xFF))
+#define CURRENT_APP_VERSION()           MAKE_APP_VERSION(0, 1)
+
 typedef struct jgb_app_callback
 {
+    int version;
     int (*init)(void* conf); // 初始化应用
     void (*release)(void* conf); // 释放应用
     int (*create)(void* conf);  // 创建实例

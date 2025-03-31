@@ -57,7 +57,7 @@ static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_b
             json_type |= (1 << t_);
         }
 
-        jgb_debug("{ json_type = 0x%02x }", json_type);
+        //jgb_debug("{ json_type = 0x%02x }", json_type);
 
         if(json_type == object_type)
         {
@@ -105,7 +105,7 @@ static jgb::value* create_array(json_t* json)
     size_t size = json_array_size(json);
 
     jgb_assert(json_typeof(json) == JSON_ARRAY);
-    jgb_debug("{ size = %lu }", size);
+    //jgb_debug("{ size = %lu }", size);
 
     if(size > 0)
     {
@@ -115,7 +115,7 @@ static jgb::value* create_array(json_t* json)
         // TODO：优先使用 shema 定义的数据类型。
         if(json_array_get_type(json, &d_type, &is_bool))
         {
-            jgb_debug("{ d_type = %d, is_bool = %d }", (int) d_type, is_bool);
+            //jgb_debug("{ d_type = %d, is_bool = %d }", (int) d_type, is_bool);
 
             jgb::value* val = new jgb::value(d_type, size, true, is_bool);
 
@@ -203,7 +203,7 @@ static config* create_config(json_t* json)
 
     json_object_foreach(json, key, json_val)
     {
-        jgb_debug("{ key = %s }", key);
+        //jgb_debug("{ key = %s }", key);
         switch (json_typeof(json_val))
         {
             case JSON_OBJECT:
@@ -219,6 +219,11 @@ static config* create_config(json_t* json)
                     if(val)
                     {
                         conf->pair_.push_back(new pair(key, val));
+                        if(val->type_ == jgb::value::data_type::none)
+                        {
+                            jgb_debug("{ jpath =  %s }",
+                                      key);
+                        }
                     }
                 }
                 break;

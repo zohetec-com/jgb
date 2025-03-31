@@ -54,103 +54,10 @@ public:
         object
     };
 
-    value(data_type type = data_type::none, int len = 1, bool is_array = false, bool is_bool = false)
-    {
-        if(len > object_len_max)
-        {
-            jgb_warning("请求创建数组，长度超限，已截断处理！{ len = %d，object_len_max = %d }", len, object_len_max);
-            len = object_len_max;
-        }
-
-        if(len > 0)
-        {
-            int_ = new int64_t[len];
-            jgb_assert(int_);
-        }
-        else
-        {
-            int_ = nullptr;
-        }
-
-        type_ = type;
-        len_ = len;
-        if(len > 1)
-        {
-            is_array_ = true;
-        }
-        else
-        {
-            is_array_ = is_array;
-        }
-        is_bool_ = is_bool;
-        valid_ = false;
-    }
-
-    int reinit(data_type type, int len, bool is_array, bool is_bool)
-    {
-        if(type_ == data_type::none)
-        {
-            if(len > 0)
-            {
-                if(len > object_len_max)
-                {
-                    jgb_warning("请求创建数组，长度超限，已截断处理！请求 %d，最大 %d", len, object_len_max);
-                    len = object_len_max;
-                }
-
-                int_ = new int64_t[len];
-                jgb_assert(int_);
-
-                type_ = type;
-                len_ = len;
-                if(len > 1)
-                {
-                    is_array = true;
-                }
-                else
-                {
-                    is_array_ = is_array;
-                }
-                is_bool_ = is_bool;
-            }
-            else
-            {
-                return JGB_ERR_INVALID;
-            }
-        }
-        else
-        {
-            // TODO：需要支持重新初始化吗？
-            return JGB_ERR_DENIED;
-        }
-    }
-
+    value(data_type type = data_type::none, int len = 1, bool is_array = false, bool is_bool = false);
     ~value();
 
     friend std::ostream& operator<<(std::ostream& os, const value* val);
-
-    bool valid()
-    {
-        return valid_;
-    }
-
-    data_type type()
-    {
-        return type_;
-    }
-
-    int len()
-    {
-        return len_;
-    }
-
-    int64_t integer()
-    {
-        jgb_assert(type_ == data_type::integer);
-        jgb_assert(valid_);
-        jgb_assert(len_ > 0);
-        return int_[0];
-    }
 
     union
     {
@@ -185,18 +92,8 @@ public:
 class pair
 {
 public:
-    pair(const char* name, value* value)
-    {
-        // 疑问：对 name 和 value 区别对待，这么做合适吗？
-        name_ = strdup(name);
-        value_ = value;
-    }
-
-    ~pair()
-    {
-        free((void*) name_);
-        delete value_;
-    }
+    pair(const char* name, value* value);
+    ~pair();
 
     friend std::ostream& operator<<(std::ostream& os, const pair* pr);
 
@@ -208,6 +105,7 @@ public:
 class config
 {
 public:
+    config();
     ~config();
 
     pair* find(const char* name);
