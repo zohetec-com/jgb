@@ -29,5 +29,6 @@
 #define JGB_ERR_DENIED                      1001    // 请求本身没有问题，但条件所限，只能拒绝
 #define JGB_ERR_INVALID                     1002    // 无效的请求：内容缺失、格式无效
 #define JGB_ERR_NOT_SUPPORT                 1003    // 不支持所请求的操作：尚未实现，或者已经被移除
+#define JGB_ERR_IGNORED                     1004    // 请求被忽略
 
 #endif // ERROR_H

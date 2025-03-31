@@ -135,19 +135,68 @@ std::ostream& operator<<(std::ostream& os, const pair* pr)
 
 std::ostream& operator<<(std::ostream& os, const config* conf)
 {
+    //jgb_debug("{ conf = %p }", conf);
     os << '{';
-    int n = conf->pair_.size();
-    int nn = 0;
-    for (auto & i : conf->pair_) {
-        os << i;
-        ++ nn;
-        if(nn < n)
-        {
-            os << ',';
+    if(conf)
+    {
+        int n = conf->pair_.size();
+        int nn = 0;
+        for (auto & i : conf->pair_) {
+            os << i;
+            ++ nn;
+            if(nn < n)
+            {
+                os << ',';
+            }
         }
     }
     os << '}';
     return os;
+}
+
+config::~config()
+{
+    for (auto & i : pair_)
+    {
+        delete i;
+    }
+}
+
+pair* config::find(const char* name)
+{
+    if(name)
+    {
+        for (auto it = pair_.begin(); it != pair_.end(); ++it)
+        {
+            if(!strcmp(name, (*it)->name_))
+            {
+                return *it;
+            }
+        }
+    }
+    return nullptr;
+}
+
+int config::add(const char* name, config* conf)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    pair* pr = find(name);
+    if(!pr)
+    {
+        jgb::value* val = new jgb::value(jgb::value::data_type::object);
+        val->conf_[0] = conf;
+        pair_.push_back(new pair(name, val));
+        return 0;
+    }
+    else
+    {
+        jgb_fail("config already exist. { name = %s }", name);
+        return JGB_ERR_IGNORED;
+    }
 }
 
 }

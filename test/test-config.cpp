@@ -1,6 +1,12 @@
 #include "helper.h"
 #include "config_factory.h"
 
+static void test_null_conf()
+{
+    jgb::config conf;
+    std::cout << &conf << std::endl;
+}
+
 static void test_datatype()
 {
     jgb_debug("{ sizeof(int64_t*) = %ld}", sizeof(int64_t*));
@@ -141,6 +147,7 @@ int main()
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_null_conf();
     test_datatype();
     test_value();
     test_null_value();

@@ -208,28 +208,10 @@ public:
 class config
 {
 public:
-    ~config()
-    {
-        for (auto & i : pair_)
-        {
-            delete i;
-        }
-    }
+    ~config();
 
-    pair* find(const char* name)
-    {
-        if(name)
-        {
-            for (auto it = pair_.begin(); it != pair_.end(); ++it)
-            {
-                if(!strcmp(name, (*it)->name_))
-                {
-                    return *it;
-                }
-            }
-        }
-        return nullptr;
-    }
+    pair* find(const char* name);
+    int add(const char* name, config* conf);
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 
