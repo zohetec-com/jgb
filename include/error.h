@@ -24,11 +24,15 @@
 #ifndef ERROR_H_20250301
 #define ERROR_H_20250301
 
-#define JGB_OK                              0       // 成功、正常
-#define JGB_FAIL                            1000    // 成功、正常
-#define JGB_ERR_DENIED                      1001    // 请求本身没有问题，但条件所限，只能拒绝
-#define JGB_ERR_INVALID                     1002    // 无效的请求：内容缺失、格式无效
-#define JGB_ERR_NOT_SUPPORT                 1003    // 不支持所请求的操作：尚未实现，或者已经被移除
-#define JGB_ERR_IGNORED                     1004    // 请求被忽略
+enum jgb_error
+{
+    JGB_OK = 0,                 // 成功，一切正常
+    JGB_ERR_FAIL = 1000,        // 处理请求失败
+    JGB_ERR_DENIED,             // 系统拒绝处理该请求
+    JGB_ERR_INVALID,            // 无效的请求：内容缺失、格式无效
+    JGB_ERR_NOT_SUPPORT,        // 系统不支持处理该请求：尚未实现，或者功能已经被移除
+    JGB_ERR_IGNORED,            // 系统忽略处理该请求：没有什么需要做的
+    JGB_ERR_NOT_FOUND           // 没有找到所请求的对象
+};
 
 #endif // ERROR_H

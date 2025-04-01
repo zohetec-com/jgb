@@ -24,9 +24,58 @@
 #include "error.h"
 #include "debug.h"
 #include "helper.h"
+#include <math.h>
+#include <stdexcept>
+#include <string.h>
 
 namespace jgb
 {
+
+int str_index_to_int(int& idx, const char* s, const char* e)
+{
+    if(s)
+    {
+        if(!e)
+        {
+            e = s + strlen(s) - 1;
+        }
+        jgb_debug("{ e - s = %d }", (int)(e - s));
+        if(e > s + 1)
+        {
+            if(*s == '[' && *e == ']')
+            {
+                std::string str(s + 1, e);
+                jgb_debug("{ str = %s }", str.c_str());
+                return stoi(str, idx);
+            }
+        }
+    }
+    return JGB_ERR_INVALID;
+}
+
+// 如 path = "/a/b/c[2]" 返回 path + 6
+const char* get_last_index(const char* path)
+{
+    const char* s = path;
+
+    if(s && *s != '\0')
+    {
+        const char* p = path + strlen(path) - 1;
+        if(*p == ']')
+        {
+            -- p;
+            while(p >= s)
+            {
+                if(*p == '[')
+                {
+                    return p;
+                }
+                -- p;
+            }
+        }
+    }
+    return nullptr;
+}
 
 // 输入不能包含有空格！
 int jpath_parse(const char** start, const char** end)
@@ -78,6 +127,40 @@ int jpath_parse(const char** start, const char** end)
     {
         return JGB_ERR_INVALID;
     }
+}
+
+// https://www.geeksforgeeks.org/compare-float-and-double-while-accounting-for-precision-loss/
+bool is_equal(double a, double b, double epsilon)
+{
+    return fabs(a - b) < epsilon;
+}
+
+int stoi(const std::string &str, int& v)
+{
+    std::size_t pos{};
+    bool fail = false;
+
+    try
+    {
+        v = std::stoi(str, &pos, 0);
+    }
+    catch (...)
+    {
+        jgb_mark();
+        fail = true;
+    }
+
+    if(!fail)
+    {
+        if(str[pos] == '\0')
+        {
+            return 0;
+        }
+        jgb_debug("{ pos = %lu }", pos);
+    }
+
+    jgb_debug("{ str = %s}", str.c_str());
+    return JGB_ERR_INVALID;
 }
 
 } // namespace jgb

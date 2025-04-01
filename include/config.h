@@ -57,6 +57,8 @@ public:
     value(data_type type = data_type::none, int len = 1, bool is_array = false, bool is_bool = false);
     ~value();
 
+    int get(const char* path, value** val);
+
     friend std::ostream& operator<<(std::ostream& os, const value* val);
 
     union
@@ -108,8 +110,15 @@ public:
     config();
     ~config();
 
-    pair* find(const char* name);
+    pair* find(const char* name, int n = 0);
     int add(const char* name, config* conf);
+
+    int get(const char* path, value** val);
+    int get(const char* path, value** val, int& idx);
+    int get(const char* path, int& val);
+    int get(const char* path, double& val);
+    int get(const char* path, const char** val);
+    int get(const char* path, config** val);
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 

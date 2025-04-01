@@ -96,6 +96,220 @@ static void test_jpath_parse()
     jgb_assert(*e == '\0');
 }
 
+static void test_stoi()
+{
+    int v;
+    int r;
+
+    r = jgb::stoi("0x1234", v);
+    jgb_assert(!r);
+    jgb_assert(v == 0x1234);
+
+    r = jgb::stoi("1234", v);
+    jgb_assert(!r);
+    jgb_assert(v == 1234);
+
+    r = jgb::stoi("1", v);
+    jgb_assert(!r);
+    jgb_assert(v == 1);
+}
+
+static void test_str_index_to_int()
+{
+    {
+        const char* str = "[123]";
+        int r;
+        int idx = -1;
+
+        r = jgb::str_index_to_int(idx, str);
+        jgb_assert(!r);
+        jgb_assert(idx == 123);
+    }
+
+    {
+        const char* str = "[0]";
+        int r;
+        int idx = -1;
+
+        r = jgb::str_index_to_int(idx, str);
+        jgb_assert(!r);
+        jgb_assert(idx == 0);
+    }
+}
+
+static void test_get_last_index()
+{
+    {
+        const char* str = "/a/b/c[3]";
+        const char* p = jgb::get_last_index(str);
+        jgb_debug("{ p = %p, p - str = %d }", p, (int)(p - str));
+        jgb_assert(p == str + 6);
+        jgb_assert(!strcmp(p, "[3]"));
+    }
+
+    {
+        const char* str = "[1]";
+        const char* p = jgb::get_last_index(str);
+        jgb_assert(p == str);
+        jgb_assert(!strcmp(p, "[1]"));
+    }
+}
+
+static void test_get(jgb::config* conf)
+{
+    int r;
+    jgb::value* val;
+
+    r = conf->get("/p1", &val);
+    jgb_assert(!r);
+    jgb_assert(val->type_ == jgb::value::data_type::integer);
+    jgb_assert(val->len_ == 1);
+    jgb_assert(val->int_[0] == 123);
+    jgb_assert(val->valid_);
+
+    int ival;
+    const char* sval;
+    double rval;
+
+    r = conf->get("/p1", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 123);
+
+    r = conf->get("/p2", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 3.14));
+
+    r = conf->get("/p3", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "abc"));
+
+    r = conf->get("/p4", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1);
+
+    r = conf->get("/p4[0]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1);
+
+    r = conf->get("/p4[1]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 2);
+
+    r = conf->get("/p4[2]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 3);
+
+    r = conf->get("/p5", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 0.1));
+
+    r = conf->get("/p5[0]", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 0.1));
+
+    r = conf->get("/p5[1]", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 0.2));
+
+    r = conf->get("/p5[2]", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 0.3));
+
+    r = conf->get("/p6", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "hello"));
+
+    r = conf->get("/p6[0]", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "hello"));
+
+    r = conf->get("/p6[1]", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "world"));
+
+    r = conf->get("/p7/p71", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1234);
+
+    r = conf->get("/p7/p72", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 31.4));
+
+    r = conf->get("/p7/p73", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "abcdefg"));
+
+    r = conf->get("/p7/p74", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 10);
+
+    r = conf->get("/p7/p74[0]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 10);
+
+    r = conf->get("/p7/p74[1]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 20);
+
+    r = conf->get("/p7/p74[2]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 30);
+
+    r = conf->get("/p7/p75", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 1.0));
+
+    r = conf->get("/p7/p75[0]", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 1.0));
+
+    r = conf->get("/p7/p75[1]", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 2.0));
+
+    r = conf->get("/p7/p75[2]", rval);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rval, 3.0));
+
+    r = conf->get("/p7/p76", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "asia"));
+
+    r = conf->get("/p7/p76[0]", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "asia"));
+
+    r = conf->get("/p7/p76[1]", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "pacific"));
+
+    r = conf->get("/p7/p77", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1);
+
+    r = conf->get("/p7/p77[0]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival);
+
+    r = conf->get("/p7/p77[1]", ival);
+    jgb_assert(!r);
+    jgb_assert(!ival);
+
+    r = conf->get("/p7/p78", &val);
+    jgb_assert(!r);
+    jgb_assert(val->type_ == jgb::value::data_type::object);
+    jgb_assert(val->len_ == 2);
+    jgb_assert(val->valid_);
+
+    jgb::config* cval;
+    r = conf->get("/p7", &cval);
+    jgb_assert(!r);
+
+    r = cval->get("p71", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1234);
+}
+
 static void test_create_update()
 {
     // 从 json 文档创建 config 对象。
@@ -117,40 +331,14 @@ static void test_create_update()
         jgb_assert(int_v != real_v);
     }
 
+    test_get(conf);
+
     // 以 json 文档更新 config。
     bool changed = jgb::config_factory::update(conf, "update.json");
     jgb_assert(changed);
 
     std::cout << "[UPDATED]" << conf << std::endl;
 
-#if 0
-    // 异常处理？
-    jgb_assert(conf->get_value("/p1").valid());
-    jgb_assert(conf->get_value("/p1").type() == jgb::value::data_type::integer);
-    jgb_assert(conf->get_value("/p1").size() == 1);
-    jgb_assert(conf->get_value("/p1").int_[0] == 123);
-    jgb_assert(conf->get_value("/p1").integer() == 123);
-
-    jgb_assert(conf->get_value("/p4").valid());
-    jgb_assert(conf->get_value("/p4").type() == jgb::value::data_type::integer);
-    jgb_assert(conf->get_value("/p4").size() == 3);
-    jgb_assert(conf->get_value("/p4").int_[0] == 1);
-    jgb_assert(conf->get_value("/p4").int_[1] == 2);
-    jgb_assert(conf->get_value("/p4").int_[2] == 3);
-
-    jgb_assert(conf->get_value("/p7/p71").valid());
-    jgb_assert(conf->get_value("/p7/p71").type() == jgb::value::data_type::integer);
-    jgb_assert(conf->get_value("/p7/p71").size() == 1);
-    jgb_assert(conf->get_value("/p7/p71").int_[0] == 123);
-    jgb_assert(conf->get_value("/p7/p71").integer() == 123);
-
-    jgb_assert(conf->get_value("/p7/p4").valid());
-    jgb_assert(conf->get_value("/p7/p4").type() == jgb::value::data_type::integer);
-    jgb_assert(conf->get_value("/p7/p4").size() == 3);
-    jgb_assert(conf->get_value("/p7/p4").int_[0] == 1);
-    jgb_assert(conf->get_value("/p7/p4").int_[1] == 2);
-    jgb_assert(conf->get_value("/p7/p4").int_[2] == 3);
-#endif
     delete conf;
 }
 
@@ -171,6 +359,9 @@ int main()
     test_value();
     test_null_value();
 
+    test_str_index_to_int();
+    test_get_last_index();
+    test_stoi();
     test_const();
     test_jpath_parse();
     test_create_update();

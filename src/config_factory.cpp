@@ -118,6 +118,7 @@ static jgb::value* create_array(json_t* json)
             //jgb_debug("{ d_type = %d, is_bool = %d }", (int) d_type, is_bool);
 
             jgb::value* val = new jgb::value(d_type, size, true, is_bool);
+            val->valid_ = true;
 
             size_t i;
             json_t *json_val;
@@ -209,6 +210,7 @@ static config* create_config(json_t* json)
             case JSON_OBJECT:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::object);
+                    val->valid_ = true;
                     val->conf_[0] = create_config(json_val);
                     conf->pair_.push_back(new pair(key, val));
                 }
@@ -230,6 +232,7 @@ static config* create_config(json_t* json)
             case JSON_STRING:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::string);
+                    val->valid_ = true;
                     val->str_[0] = strdup(json_string_value(json_val));
                     conf->pair_.push_back(new pair(key, val));
                 }
@@ -237,6 +240,7 @@ static config* create_config(json_t* json)
             case JSON_INTEGER:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::integer);
+                    val->valid_ = true;
                     val->int_[0] = json_integer_value(json_val);
                     conf->pair_.push_back(new pair(key, val));
                 }
@@ -244,6 +248,7 @@ static config* create_config(json_t* json)
             case JSON_REAL:
                 {
                     jgb::value* val = new jgb::value(jgb::value::data_type::real);
+                    val->valid_ = true;
                     val->real_[0] = json_real_value(json_val);
                     conf->pair_.push_back(new pair(key, val));
                 }
@@ -253,6 +258,7 @@ static config* create_config(json_t* json)
                 {
                     // TODO：结合 schema 信息使用，适配参数（需要）使用别名的场景。
                     jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, true);
+                    val->valid_ = true;
                     val->int_[0] = json_typeof(json_val) == JSON_TRUE;
                     conf->pair_.push_back(new pair(key, val));
                 }

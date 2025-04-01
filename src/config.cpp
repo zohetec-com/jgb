@@ -24,6 +24,7 @@
 #include "config.h"
 #include "error.h"
 #include "debug.h"
+#include "helper.h"
 
 namespace jgb
 {
@@ -80,6 +81,55 @@ value::value(data_type type, int len, bool is_array, bool is_bool)
     }
     is_bool_ = is_bool;
     valid_ = false;
+}
+
+int value::get(const char* path, value** val)
+{
+    if(!path || !val)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    int r;
+    const char* s = path;
+    const char* e;
+
+    r = jpath_parse(&s, &e);
+    if(r)
+    {
+        return r;
+    }
+
+    if(*s != '\0')
+    {
+        if(type_ == data_type::object)
+        {
+            // 如果 s 是下标
+            if(*s == '[' && *e == ']')
+            {
+                int idx;
+                r = str_index_to_int(idx, s, e);
+                if(!r && idx >= 0 && idx < len_)
+                {
+                    jgb_debug("{ jpath = %s }", e + 1);
+                    return conf_[idx]->get(e + 1, val);
+                }
+            }
+            else
+            {
+                jgb_debug("{ jpath = %s }", s);
+                return conf_[0]->get(s, val);
+            }
+        }
+
+        jgb_debug("{ jpath = %s }", s);
+        return JGB_ERR_INVALID;
+    }
+    else
+    {
+        *val = this;
+        return 0;
+    }
 }
 
 pair::pair(const char* name, value* value)
@@ -211,15 +261,25 @@ config::~config()
     }
 }
 
-pair* config::find(const char* name)
+pair* config::find(const char* name, int n)
 {
     if(name)
     {
         for (auto it = pair_.begin(); it != pair_.end(); ++it)
         {
-            if(!strcmp(name, (*it)->name_))
+            if(!n)
             {
-                return *it;
+                if(!strcmp(name, (*it)->name_))
+                {
+                    return *it;
+                }
+            }
+            else
+            {
+                if(!strncmp(name, (*it)->name_, n))
+                {
+                    return *it;
+                }
             }
         }
     }
@@ -246,6 +306,159 @@ int config::add(const char* name, config* conf)
         jgb_fail("config already exist. { name = %s }", name);
         return JGB_ERR_IGNORED;
     }
+}
+
+int config::get(const char* path, value** val)
+{
+    if(!path || !val)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    int r;
+    const char* s = path;
+    const char* e;
+
+    r = jpath_parse(&s, &e);
+    if(!r)
+    {
+        if(*s != '\0')
+        {
+            pair* pr = find(s, (int)(e - s));
+            if(pr)
+            {
+                return pr->value_->get(e, val);
+            }
+        }
+    }
+
+    *val = nullptr;
+    jgb_debug("not found. { s = %.*s }", (int)(e - s), s);
+    return JGB_ERR_NOT_FOUND;
+}
+
+int config::get(const char* path, value** val, int& idx)
+{
+    if(path && val)
+    {
+        int r;
+        const char* str_idx;
+        const char* base;
+        std::string s;
+
+        str_idx = get_last_index(path);
+        if(str_idx)
+        {
+            if(str_idx == path)
+            {
+                return JGB_ERR_INVALID;
+            }
+            r = str_index_to_int(idx, str_idx);
+            if(r)
+            {
+                return JGB_ERR_INVALID;
+            }
+            s = std::string(path, str_idx);
+            base = s.c_str();
+        }
+        else
+        {
+            idx = 0;
+            base = path;
+        }
+
+        jgb_debug("{ path = %s, str_idx = %s, idx = %d}", path, str_idx, idx);
+
+        return get(base, val);
+    }
+    else
+    {
+        return JGB_ERR_INVALID;
+    }
+}
+
+int config::get(const char* path, int& val)
+{
+    int r;
+    int idx;
+    value* pval;
+
+    r = get(path, &pval, idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        if(pval->type_ == value::data_type::integer
+                && pval->valid_
+                && pval->len_ > idx)
+        {
+            val = pval->int_[idx];
+            return 0;
+        }
+    }
+    return JGB_ERR_FAIL;
+}
+
+int config::get(const char* path, double& val)
+{
+    int r;
+    int idx;
+    value* pval;
+
+    r = get(path, &pval, idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        if(pval->type_ == value::data_type::real
+                && pval->valid_
+                && pval->len_ > idx)
+        {
+            val = pval->real_[idx];
+            return 0;
+        }
+    }
+    return JGB_ERR_FAIL;
+}
+
+int config::get(const char* path, const char** val)
+{
+    int r;
+    int idx;
+    value* pval;
+
+    r = get(path, &pval, idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        if(pval->type_ == value::data_type::string
+                && pval->valid_
+                && pval->len_ > idx)
+        {
+            *val = pval->str_[idx];
+            return 0;
+        }
+    }
+    return JGB_ERR_FAIL;
+}
+
+int config::get(const char* path, config** val)
+{
+    int r;
+    int idx;
+    value* pval;
+
+    r = get(path, &pval, idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        if(pval->type_ == value::data_type::object
+                && pval->valid_
+                && pval->len_ > idx)
+        {
+            *val = pval->conf_[idx];
+            return 0;
+        }
+    }
+    return JGB_ERR_FAIL;
 }
 
 }

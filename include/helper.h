@@ -24,10 +24,16 @@
 #ifndef HELPER_H_20250319
 #define HELPER_H_20250319
 
+#include <string>
+
 namespace jgb
 {
 
+int str_index_to_int(int &idx, const char* start, const char* end = nullptr);
+const char* get_last_index(const char* path);
 int jpath_parse(const char** start, const char** end);
+bool is_equal(double a, double b, double epsilon = 1e-6);
+int stoi(const std::string& str, int& v);
 
 } // namespace jgb
 #endif // HELPER_H
