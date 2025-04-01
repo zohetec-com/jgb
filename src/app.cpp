@@ -8,6 +8,12 @@ namespace jgb
 app::app()
 {
     conf_dir = "/etc/jgb";
+    app_conf_ = new config;
+}
+
+app::~app()
+{
+    delete app_conf_;
 }
 
 app* app::get_instance()
@@ -45,7 +51,7 @@ int app::install(const char* name, jgb_app_callback_t* app_callback)
 
     std::string conf_file_path = std::string(conf_dir) + '/' + name + ".json";
     config* conf = config_factory::create(conf_file_path.c_str());
-    app_conf_.add(name, conf);
+    app_conf_->add(name, conf);
     //jgb_debug("{ name = %s, conf = %p }", name, conf);
 
     if(app_callback)

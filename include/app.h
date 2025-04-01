@@ -23,7 +23,7 @@ public:
     int install(const char* name, jgb_app_callback_t* app_callback = nullptr);
     bool exist(const char* name);
 
-    config app_conf_;
+    config* app_conf_;
     std::list<app_info> app_info_;
     const char* conf_dir;
 
@@ -31,6 +31,7 @@ public:
 
 private:
     app();
+    ~app();
 };
 
 } // namespace jgb
