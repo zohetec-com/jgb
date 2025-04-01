@@ -50,28 +50,47 @@ static void test_const()
     jgb_assert(val->valid_);
 }
 
-static void test_get_dir()
+static void test_jpath_parse()
 {
-    const char* path = "/p7///p78[1]/";
-    const char* s = path;
-    const char* e = nullptr;
+    const char* s;
+    const char* e;
     int r;
 
-    while(*s != '\0')
     {
-        r = get_dir(&s, &e);
+        const char* path = "/p7///p78[1]/";
+
+        s = path;
+        r = jgb::jpath_parse(&s, &e);
         jgb_assert(!r);
         jgb_debug("%.*s", (int)(e - s), s);
+        jgb_assert(!strncmp("p7", s, (int)(e - s)));
+
         s = e;
+        r = jgb::jpath_parse(&s, &e);
+        jgb_assert(!r);
+        jgb_debug("%.*s", (int)(e - s), s);
+        jgb_assert(!strncmp("p78", s, (int)(e - s)));
+
+        s = e;
+        r = jgb::jpath_parse(&s, &e);
+        jgb_assert(!r);
+        jgb_debug("%.*s", (int)(e - s), s);
+        jgb_assert(!strncmp("[1]", s, (int)(e - s)));
+
+        s = e;
+        r = jgb::jpath_parse(&s, &e);
+        jgb_assert(!r);
+        jgb_debug("%.*s", (int)(e - s), s);
+        jgb_assert(s == e);
     }
 
     const char* path2 = nullptr;
     s = path2;
-    jgb_assert(get_dir(&s, &e));
+    jgb_assert(jgb::jpath_parse(&s, &e));
 
     const char* path3 = "";
     s = path3;
-    r = get_dir(&s, &e);
+    r = jgb::jpath_parse(&s, &e);
     jgb_assert(!r);
     jgb_assert(*s == '\0');
     jgb_assert(*e == '\0');
@@ -153,7 +172,7 @@ int main()
     test_null_value();
 
     test_const();
-    test_get_dir();
+    test_jpath_parse();
     test_create_update();
     test_get_dev_info();
 

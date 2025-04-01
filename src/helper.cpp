@@ -25,22 +25,49 @@
 #include "debug.h"
 #include "helper.h"
 
+namespace jgb
+{
+
 // 输入不能包含有空格！
-int get_dir(const char** start, const char** end)
+int jpath_parse(const char** start, const char** end)
 {
     if(start && *start)
     {
         const char* p = *start;
+        // 跳过开始的 "///"
         while(*p == '/' && *p != '\0')
         {
             ++ p;
         }
+        jgb_assert(*p != '/');
         *start = p;
         if(end)
         {
-            jgb_assert(*p != '/');
-            while(*p != '/' && *p != '\0')
+            const char* s = p;
+            while(true)
             {
+                if(*p == '/'
+                        || *p == '\0')
+                {
+                    break;
+                }
+
+                if(*s == '[')
+                {
+                    if(*p == ']')
+                    {
+                        ++ p;
+                        break;
+                    }
+                }
+                else
+                {
+                    if(*p == '[')
+                    {
+                        break;
+                    }
+                }
+
                 ++ p;
             }
             *end = p;
@@ -52,3 +79,5 @@ int get_dir(const char** start, const char** end)
         return JGB_ERR_INVALID;
     }
 }
+
+} // namespace jgb
