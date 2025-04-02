@@ -35,10 +35,10 @@
 #define jgb_error(fmt, ...)     fprintf(stderr, "[%s:%d][ERROR] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 // notice 特例
-#define jgb_ok(fmt, ...)    fprintf(stderr, "[%s:%d][OK] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define jgb_ok(fmt, ...)        fprintf(stderr, "[%s:%d][OK] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 // 调试的特例
-#define jgb_function()          fprintf(stderr, "[%s:%d][DEBUG] call %s\n", __FILE__, __LINE__, __FUNCTION__)
+#define jgb_function()          fprintf(stderr, "[%s:%d][DEBUG] call %s()\n", __FILE__, __LINE__, __FUNCTION__)
 #define jgb_mark()              fprintf(stderr, "[%s:%d][DEBUG]\n", __FILE__, __LINE__)
 
 // 错误的特例

@@ -1,28 +1,28 @@
 #include "config_factory.h"
-#include "app.h"
+#include "core.h"
 #include "error.h"
 #include <string>
 
 namespace jgb
 {
-app::app()
+core::core()
 {
     conf_dir = "/etc/jgb";
     app_conf_ = new config;
 }
 
-app::~app()
+core::~core()
 {
     delete app_conf_;
 }
 
-app* app::get_instance()
+core* core::get_instance()
 {
-    static app a;
+    static core a;
     return &a;
 }
 
-int app::set_conf_dir(const char* dir)
+int core::set_conf_dir(const char* dir)
 {
     if(!dir)
     {
@@ -36,16 +36,17 @@ int app::set_conf_dir(const char* dir)
     return 0;
 }
 
-int app::install(const char* name, jgb_app_callback_t* app_callback)
+int core::install(const char* name, jgb_app_t* app)
 {
     if(!name)
     {
         return JGB_ERR_INVALID;
     }
 
-    if(exist(name))
+    struct ap* ap = find(name);
+    if(ap)
     {
-        jgb_warning("app already exist. { name = %s }", name);
+        jgb_warning("app already exist. { name = %s, desc = %s }", name, ap->app->desc);
         return JGB_ERR_IGNORED;
     }
 
@@ -54,21 +55,21 @@ int app::install(const char* name, jgb_app_callback_t* app_callback)
     app_conf_->add(name, conf);
     //jgb_debug("{ name = %s, conf = %p }", name, conf);
 
-    if(app_callback)
+    if(app)
     {
-        if(app_callback->version != current_app_callback_version)
+        if(app->version != current_app_interface_version)
         {
             jgb_fail("invalid app version. { app.version = %x, required = %x }",
-                     app_callback->version, current_app_callback_version);
+                     app->version, current_app_interface_version);
             return JGB_ERR_NOT_SUPPORT;
         }
 
-        if(app_callback->init)
+        if(app->init)
         {
-            int r = app_callback->init(conf);
+            int r = app->init(conf);
             if(!r)
             {
-                jgb_ok("install %s", name);
+                jgb_ok("install %s. { desc = %s }", name, app->desc);
             }
             else
             {
@@ -80,16 +81,23 @@ int app::install(const char* name, jgb_app_callback_t* app_callback)
     return 0;
 }
 
-bool app::exist(const char* name)
+struct ap* core::find(const char* name)
 {
-    for(auto it = app_info_.cbegin(); it != app_info_.end(); ++it)
+    for(auto it = ap_.begin(); it != ap_.end(); ++it)
     {
-        if(!strcmp(name, (*it).name))
+        if(!strcmp(name, (*it).name.c_str()))
         {
-            return true;
+            return &(*it);
         }
     }
-    return false;
+    return nullptr;
+}
+
+// TODO:
+int core::start(const char* path)
+{
+    path = path;
+    return 0;
 }
 
 }

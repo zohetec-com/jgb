@@ -23,9 +23,9 @@
  */
 #include "debug.h"
 #include <unistd.h>
+#include "core.h"
 
-extern int jgb_set_conf_dir(const char* d);
-extern int jgb_install(const char* appname, const char* libfile);
+extern jgb_app_t test_core;
 
 int main(int argc, char *argv[])
 {
@@ -38,14 +38,15 @@ int main(int argc, char *argv[])
         switch (c)
         {
         case 'D':
-            jgb_set_conf_dir(optarg);
+            jgb::core::get_instance()->set_conf_dir(optarg);
             break;
         default:
             break;
         }
     }
 
-    jgb_install("xyz", NULL);
+    jgb::core::get_instance()->install("test_core", &test_core);
+    jgb::core::get_instance()->start("test_core");
 
     return 0;
 }
