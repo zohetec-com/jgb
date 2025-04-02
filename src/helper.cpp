@@ -31,7 +31,7 @@
 namespace jgb
 {
 
-int str_index_to_int(int& idx, const char* s, const char* e)
+int str_to_index(int& idx, const char* s, const char* e)
 {
     if(s)
     {
@@ -54,7 +54,7 @@ int str_index_to_int(int& idx, const char* s, const char* e)
 }
 
 // 如 path = "/a/b/c[2]" 返回 path + 6
-const char* get_last_index(const char* path)
+static const char* get_last_index(const char* path)
 {
     const char* s = path;
 
@@ -75,6 +75,31 @@ const char* get_last_index(const char* path)
         }
     }
     return nullptr;
+}
+
+int get_base_index(const char* path, std::string& base, int& idx)
+{
+    if(!path)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    const char* sidx = get_last_index(path);
+    if(sidx)
+    {
+        if(!str_to_index(idx, sidx))
+        {
+            base = std::string(path, sidx);
+            return 0;
+        }
+        return JGB_ERR_INVALID;
+    }
+    else
+    {
+        idx = 0;
+        base = std::string(path);
+        return 0;
+    }
 }
 
 // 输入不能包含有空格！

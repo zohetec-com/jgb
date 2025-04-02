@@ -114,44 +114,28 @@ static void test_stoi()
     jgb_assert(v == 1);
 }
 
-static void test_str_index_to_int()
-{
-    {
-        const char* str = "[123]";
-        int r;
-        int idx = -1;
-
-        r = jgb::str_index_to_int(idx, str);
-        jgb_assert(!r);
-        jgb_assert(idx == 123);
-    }
-
-    {
-        const char* str = "[0]";
-        int r;
-        int idx = -1;
-
-        r = jgb::str_index_to_int(idx, str);
-        jgb_assert(!r);
-        jgb_assert(idx == 0);
-    }
-}
-
-static void test_get_last_index()
+static void test_get_base_index()
 {
     {
         const char* str = "/a/b/c[3]";
-        const char* p = jgb::get_last_index(str);
-        jgb_debug("{ p = %p, p - str = %d }", p, (int)(p - str));
-        jgb_assert(p == str + 6);
-        jgb_assert(!strcmp(p, "[3]"));
+        std::string base;
+        int idx = -1;
+        int r;
+        r = jgb::get_base_index(str, base, idx);
+        jgb_assert(!r);
+        jgb_assert(idx == 3);
+        jgb_assert(!strcmp(base.c_str(), "/a/b/c"));
     }
 
     {
         const char* str = "[1]";
-        const char* p = jgb::get_last_index(str);
-        jgb_assert(p == str);
-        jgb_assert(!strcmp(p, "[1]"));
+        std::string base;
+        int idx = -1;
+        int r;
+        r = jgb::get_base_index(str, base, idx);
+        jgb_assert(!r);
+        jgb_assert(idx == 1);
+        jgb_assert(!strcmp(base.c_str(), ""));
     }
 }
 
@@ -359,8 +343,7 @@ int main()
     test_value();
     test_null_value();
 
-    test_str_index_to_int();
-    test_get_last_index();
+    test_get_base_index();
     test_stoi();
     test_const();
     test_jpath_parse();

@@ -69,7 +69,7 @@ int core::install(const char* name, jgb_app_t* app)
             int r = app->init(conf);
             if(!r)
             {
-                jgb_ok("install %s. { desc = %s }", name, app->desc);
+                jgb_ok("install %s. { desc = \"%s\" }", name, app->desc);
             }
             else
             {

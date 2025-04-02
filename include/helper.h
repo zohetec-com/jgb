@@ -29,8 +29,8 @@
 namespace jgb
 {
 
-int str_index_to_int(int &idx, const char* start, const char* end = nullptr);
-const char* get_last_index(const char* path);
+int str_to_index(int& idx, const char* s, const char* e = nullptr);
+int get_base_index(const char* path, std::string& base, int& idx);
 int jpath_parse(const char** start, const char** end);
 bool is_equal(double a, double b, double epsilon = 1e-6);
 int stoi(const std::string& str, int& v);

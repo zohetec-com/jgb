@@ -108,7 +108,7 @@ int value::get(const char* path, value** val)
             if(*s == '[' && *e == ']')
             {
                 int idx;
-                r = str_index_to_int(idx, s, e);
+                r = str_to_index(idx, s, e);
                 if(!r && idx >= 0 && idx < len_)
                 {
                     jgb_debug("{ jpath = %s }", e + 1);
@@ -342,39 +342,16 @@ int config::get(const char* path, value** val, int& idx)
     if(path && val)
     {
         int r;
-        const char* str_idx;
-        const char* base;
-        std::string s;
+        std::string base;
 
-        str_idx = get_last_index(path);
-        if(str_idx)
+        r = get_base_index(path, base, idx);
+        if(!r)
         {
-            if(str_idx == path)
-            {
-                return JGB_ERR_INVALID;
-            }
-            r = str_index_to_int(idx, str_idx);
-            if(r)
-            {
-                return JGB_ERR_INVALID;
-            }
-            s = std::string(path, str_idx);
-            base = s.c_str();
+            jgb_debug("{ path = %s, base = %s, idx = %d}", path, base.c_str(), idx);
+            return get(base.c_str(), val);
         }
-        else
-        {
-            idx = 0;
-            base = path;
-        }
-
-        jgb_debug("{ path = %s, str_idx = %s, idx = %d}", path, str_idx, idx);
-
-        return get(base, val);
     }
-    else
-    {
-        return JGB_ERR_INVALID;
-    }
+    return JGB_ERR_INVALID;
 }
 
 int config::get(const char* path, int& val)
