@@ -19,6 +19,7 @@ enum task_state
     task_state_idle,
     task_state_staring, // 在创建 worker 0 工作线程之前。
     task_state_running,
+    task_state_stopping,
     task_state_exiting,
     task_state_aborted
 };
@@ -27,6 +28,11 @@ class worker
 {
 public:
     worker(int id = 0, task* task = nullptr);
+
+    int start();
+    int stop();
+
+    std::string get_thread_id();
 
     int id_;
     struct task* task_;
@@ -38,6 +44,7 @@ class task
 {
 public:
     task(instance* instance);
+
     int start();
     int stop();
 

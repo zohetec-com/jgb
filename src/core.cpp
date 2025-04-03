@@ -6,12 +6,143 @@
 
 namespace jgb
 {
+
+struct core_worker
+{
+    void operator()(struct worker* w)
+    {
+        jgb_function();
+
+        if(!w)
+        {
+            jgb_bug();
+            return;
+        }
+
+        jgb_assert(!w->normal_);
+        jgb_assert(w->task_);
+        jgb_assert(w->task_->instance_);
+        jgb_assert(w->task_->instance_->app_);
+        jgb_assert(w->task_->instance_->app_->api_);
+        jgb_assert(w->task_->instance_->app_->api_->loop);
+        jgb_assert(w->task_->instance_->app_->api_->loop->loops[w->id_]);
+
+        jgb_loop_t* loop = w->task_->instance_->app_->api_->loop;
+        task* task = w->task_;
+        int r;
+
+        if(!w->id_)
+        {
+            if(loop->setup)
+            {
+                r = loop->setup(w);
+                if(r)
+                {
+                    return;
+                }
+            }
+
+            for (auto & i : task->workers_)
+            {
+                if(i.id_)
+                {
+                    i.start();
+                }
+            }
+
+            task->state_ = task_state_running;
+        }
+
+        while(task->run_)
+        {
+            r = loop->loops[w->id_](w);
+            if(r)
+            {
+                jgb_fail("{ r = %d, id = %d }", r, w->id_);
+                break;
+            }
+        }
+
+        if(!r)
+        {
+            w->normal_ = true;
+        }
+
+        if(!w->id_)
+        {
+            for (auto & i : task->workers_)
+            {
+                if(i.id_)
+                {
+                    i.stop();
+                }
+            }
+
+            if(loop->exit)
+            {
+                loop->exit(w);
+            }
+
+            task->state_ = task_state_exiting;
+        }
+
+        jgb_debug("loop exit. { id = %d }", w->id_);
+    }
+};
+
 worker::worker(int id, task* task)
     : id_(id),
       task_(task),
       normal_(false),
       thread_(nullptr)
 {
+}
+
+int worker::start()
+{
+    if(!thread_)
+    {
+        struct core_worker cw;
+        normal_ = false;
+        thread_ = new boost::thread(cw, this);
+
+        return 0;
+    }
+    else
+    {
+        jgb_bug();
+        return JGB_ERR_DENIED;
+    }
+}
+
+int worker::stop()
+{
+    if(thread_)
+    {
+        jgb_assert(!task_->run_);
+        jgb_debug("start jont thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
+        thread_->join();
+        jgb_debug("jont thread done. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
+        delete thread_;
+        thread_ = nullptr;
+        return 0;
+    }
+    return 0;
+}
+
+std::string worker::get_thread_id()
+{
+    if(thread_)
+    {
+        // https://stackoverflow.com/questions/61203655/how-to-printf-stdthis-threadget-id-in-c
+        std::ostringstream oss;
+        oss << thread_->get_id();
+        return oss.str();
+    }
+    else
+    {
+        return std::string();
+    }
 }
 
 task::task(instance *instance)
@@ -24,12 +155,12 @@ task::task(instance *instance)
     workers_.resize(0);
     if(app
             && app->api_
-            && app->api_->task)
+            && app->api_->loop)
     {
-        jgb_task_t* task = app->api_->task;
+        jgb_loop_t* loop = app->api_->loop;
         for(int i=0;;i++)
         {
-            if(task->loop[i])
+            if(loop->loops[i])
             {
                 jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
                 workers_.push_back(worker(i, this));
@@ -44,11 +175,50 @@ task::task(instance *instance)
 
 int task::start()
 {
-    return 0;
+    if(!workers_.size())
+    {
+        return JGB_ERR_IGNORED;
+    }
+
+    if(state_ == task_state_running)
+    {
+        return 0;
+    }
+    else if(state_ == task_state_idle || state_ == task_state_aborted)
+    {
+        // 启动任务
+        state_ = task_state_staring;
+        run_ = true;
+        return workers_[0].start();
+    }
+    else
+    {
+        return JGB_ERR_RETRY;
+    }
 }
 
 int task::stop()
 {
+    if(!workers_.size())
+    {
+        return JGB_ERR_IGNORED;
+    }
+    if(state_ == task_state_running)
+    {
+        run_ = false;
+        // 竞争！-- 工作线程也要修改 state_
+        state_ = task_state_stopping;
+        int r = workers_[0].stop();
+        if(!r)
+        {
+            state_ = task_state_idle;
+        }
+        else
+        {
+            // ???
+            jgb_assert(0);
+        }
+    }
     return 0;
 }
 
@@ -240,20 +410,6 @@ app* core::find(const char* name)
     }
     return nullptr;
 }
-
-struct core_worker
-{
-    void operator()(struct worker* w)
-    {
-        jgb_function();
-
-        if(!w)
-        {
-            jgb_bug();
-            return;
-        }
-    }
-};
 
 int core::start(const char* name, int idx)
 {

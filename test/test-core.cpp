@@ -60,12 +60,12 @@ static void test_core_release(void* conf)
     conf = conf;
 }
 
-static loop_ptr_t loop[] = { tsk_loop0, tsk_loop1, nullptr };
+static loop_ptr_t loops[] = { tsk_loop0, tsk_loop1, nullptr };
 
-static jgb_task_t task
+static jgb_loop_t loop
 {
     .setup = tsk_init,
-    .loop = loop,
+    .loops = loops,
     .exit = tsk_exit
 };
 
@@ -78,5 +78,5 @@ jgb_api_t test_core
     .create = nullptr,
     .destroy = nullptr,
     .commit = nullptr,
-    .task = &task
+    .loop = &loop
 };
