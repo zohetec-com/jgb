@@ -28,6 +28,8 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#define jgb_assert(x)           assert(x)
+
 #define jgb_debug(fmt, ...)     fprintf(stderr, "[%s:%d][DEBUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_info(fmt, ...)      fprintf(stderr, "[%s:%d][INFO] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_notice(fmt, ...)    fprintf(stderr, "[%s:%d][NOTICE] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
@@ -42,10 +44,16 @@
 #define jgb_mark()              fprintf(stderr, "[%s:%d][DEBUG]\n", __FILE__, __LINE__)
 
 // 错误的特例
-#define jgb_bug(fmt, ...)       fprintf(stderr, "[%s:%d][BUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define jgb_bug(fmt, ...) \
+    do { \
+        fprintf(stderr, "[%s:%d][BUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+        jgb_assert(0); \
+       } while(0)
 #define jgb_fail(fmt, ...)      fprintf(stderr, "[%s:%d][FAIL] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define jgb_fatal(fmt, ...)     fprintf(stderr, "[%s:%d][FATAL] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-
-#define jgb_assert(x)           assert(x)
+#define jgb_fatal(fmt, ...) \
+    do { \
+        fprintf(stderr, "[%s:%d][FATAL] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+        jgb_assert(0); \
+       } while(0)
 
 #endif // DEBUG_H

@@ -13,7 +13,7 @@ typedef struct jgb_task
 #define MAKE_API_VERSION(major,minor)   ((major<<8)|(minor & 0xFF))
 #define CURRENT_API_VERSION()           MAKE_API_VERSION(0, 1)
 
-typedef struct jgb_app
+typedef struct jgb_api
 {
     int version;
     const char* desc;
@@ -23,6 +23,6 @@ typedef struct jgb_app
     void (*destroy)(void* conf); // 销毁实例；conf 是实例的配置
     int  (*commit)(void* conf); // 使已更改的设置生效；conf 是实例的配置
     jgb_task_t* task;
-} jgb_app_t;
+} jgb_api_t;
 
 #endif // APPCALLBACK_H

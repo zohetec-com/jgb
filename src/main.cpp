@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include "core.h"
 
-extern jgb_app_t test_core;
+extern jgb_api_t test_core;
 
 int main(int argc, char *argv[])
 {

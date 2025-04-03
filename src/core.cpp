@@ -6,6 +6,57 @@
 
 namespace jgb
 {
+worker::worker(int id, task* task)
+    : id_(id),
+      task_(task),
+      normal_(true),
+      thread_(nullptr)
+{
+}
+
+task::task(struct app* app)
+    : app_(app),
+      run_(false),
+      state_(task_state_idle)
+{
+    worker_.resize(0);
+    if(app
+            && app->api_
+            && app->api_->task)
+    {
+        jgb_task_t* task = app->api_->task;
+        for(int i=0;;i++)
+        {
+            if(task->loop[i])
+            {
+                jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
+                worker_.push_back(worker(i, this));
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+}
+
+int task::start()
+{
+    return 0;
+}
+
+int task::stop()
+{
+    return 0;
+}
+
+app::app(const char* name, jgb_api_t* api, config* conf)
+    : name_(name),
+      api_(api),
+      conf_(conf)
+{
+}
+
 core::core()
 {
     conf_dir_ = "/etc/jgb";
@@ -37,7 +88,7 @@ int core::set_conf_dir(const char* dir)
     return 0;
 }
 
-int core::install(const char* name, jgb_app_t* api)
+int core::install(const char* name, jgb_api_t* api)
 {
     if(!name)
     {
@@ -56,10 +107,7 @@ int core::install(const char* name, jgb_app_t* api)
     app_conf_->add(name, conf);
     //jgb_debug("{ name = %s, conf = %p }", name, conf);
 
-    // {} ???
-    //struct app app_x { name, api, conf, {} };
-    //app_.push_back(app_x);
-    app_.push_back({ name, api, conf, {} });
+    app_.push_back(app(name, api, conf));
     struct app& app = app_.back();
 
     if(api)
@@ -85,22 +133,7 @@ int core::install(const char* name, jgb_app_t* api)
             }
         }
 
-        if(api->task && api->task->loop)
-        {
-            for(int i=0;;i++)
-            {
-                if((!i && api->task->setup) || api->task->loop[i])
-                {
-                    struct worker w {i, &app_.back(), true, nullptr };
-                    jgb_debug("add loop. { name = %s, id = %d }", name, i);
-                    app.worker_.push_back(w);
-                }
-                else
-                {
-                    break;
-                }
-            }
-        }
+        app.task_ = task(&app);
     }
 
     return 0;
@@ -126,11 +159,9 @@ struct core_worker
 
         if(!w)
         {
-            jgb_bug("{ w = %p }", w);
+            jgb_bug();
             return;
         }
-
-        jgb_debug("xxx");
     }
 };
 
@@ -153,17 +184,11 @@ int core::start(const char* path)
         jgb_debug("{ app = %p }", app);
         if(app)
         {
-            jgb_debug("{ size = %lu }", app->worker_.size());
-            if(app->worker_.size())
-            {
-                struct worker& w = app->worker_.front();
-                struct core_worker cw;
-                w.thread_ = new boost::thread(cw, &w);
-            }
+            return app->task_.start();
         }
     }
 
-    return JGB_ERR_FAIL;
+    return JGB_ERR_INVALID;
 }
 
 int core::stop(const char* path)
@@ -181,17 +206,11 @@ int core::stop(const char* path)
         app = find(name.c_str());
         if(app)
         {
-            if(app->api_
-                    && app->api_->task)
-            {
-                // TODO
-                jgb_info("stop task. { path = \"%s\", app = %s }", path, name.c_str());
-                return 0;
-            }
+            return app->task_.stop();
         }
     }
     jgb_fail("start task. { path = \"%s\" }", path);
-    return JGB_ERR_FAIL;
+    return JGB_ERR_INVALID;
 }
 
 }

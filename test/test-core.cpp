@@ -69,7 +69,7 @@ static jgb_task_t task
     .exit = tsk_exit
 };
 
-jgb_app_t test_core
+jgb_api_t test_core
 {
     .version = MAKE_API_VERSION(0, 1),
     .desc = "test core",

@@ -3,36 +3,58 @@
 
 #include "config.h"
 #include "app.h"
+#include <vector>
 #include <list>
 #include <boost/thread.hpp>
 
 namespace jgb
 {
 
-struct app;
+class app;
+class task;
 
-enum worker_state
+enum task_state
 {
-    worker_state_idle,
-    worker_state_running,
-    worker_state_exiting,
-    worker_state_aborted
+    task_state_idle,
+    task_state_staring, // 在创建 worker 0 工作线程之前。
+    task_state_running,
+    task_state_exiting,
+    task_state_aborted
 };
 
-struct worker
+class worker
 {
+public:
+    worker(int id = 0, task* task = nullptr);
+
     int id_;
-    struct app* app_;
-    bool normal_;
+    struct task* task_;
+    bool normal_; // 线程的结束状态：true-正常; false-异常
     boost::thread* thread_;
 };
 
-struct app
+class task
 {
+public:
+    task(struct app* app = nullptr);
+    int start();
+    int stop();
+
+    struct app* app_;
+    std::vector<worker> worker_;
+    bool run_; // 控制线程：true-运行; false-结束
+    enum task_state state_;
+};
+
+class app
+{
+public:
+    app(const char* name, jgb_api_t* api, config* conf);
+
     std::string name_;
-    jgb_app_t* api_;
+    jgb_api_t* api_;
     config* conf_;
-    std::list<worker> worker_;
+    struct task task_;
 };
 
 class core
@@ -40,7 +62,7 @@ class core
 public:
     static core* get_instance();
     int set_conf_dir(const char* dir);
-    int install(const char* name, jgb_app_t* api = nullptr);
+    int install(const char* name, jgb_api_t* api = nullptr);
 
     int start(const char* path);
     int stop(const char* path);
