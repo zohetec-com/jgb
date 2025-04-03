@@ -9,17 +9,19 @@ namespace jgb
 worker::worker(int id, task* task)
     : id_(id),
       task_(task),
-      normal_(true),
+      normal_(false),
       thread_(nullptr)
 {
 }
 
-task::task(struct app* app)
-    : app_(app),
+task::task(instance *instance)
+    : instance_(instance),
       run_(false),
       state_(task_state_idle)
 {
-    worker_.resize(0);
+    jgb_assert(instance_);
+    app* app = instance_->app_;
+    workers_.resize(0);
     if(app
             && app->api_
             && app->api_->task)
@@ -30,7 +32,7 @@ task::task(struct app* app)
             if(task->loop[i])
             {
                 jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
-                worker_.push_back(worker(i, this));
+                workers_.push_back(worker(i, this));
             }
             else
             {
@@ -50,10 +52,114 @@ int task::stop()
     return 0;
 }
 
+instance::instance(app* app, config* conf)
+    : app_(app),
+      conf_(conf),
+      normal_(false),
+      task_(this)
+{
+}
+
+int instance::create()
+{
+    jgb_api_t* api_ = app_->api_;
+    int r = 0;
+    if(api_
+            && api_->create)
+    {
+        r = api_->create(conf_);
+    }
+    normal_ = !r;
+    return 0;
+}
+
+void instance::destroy()
+{
+    jgb_api_t* api_ = app_->api_;
+    if(api_
+            && api_->destroy)
+    {
+        api_->destroy(conf_);
+    }
+}
+
+int instance::start()
+{
+    if(!normal_)
+    {
+        return JGB_ERR_DENIED;
+    }
+    return task_.start();
+}
+
+int instance::stop()
+{
+    if(!normal_)
+    {
+        return JGB_ERR_DENIED;
+    }
+    return task_.stop();
+}
+
 app::app(const char* name, jgb_api_t* api, config* conf)
     : name_(name),
       api_(api),
-      conf_(conf)
+      conf_(conf),
+      normal_(false)
+{
+    int r;
+
+    instances_.resize(0);
+    for(int i=0; ;i++)
+    {
+        std::string path = "/" + std::string(name) + "/instance[" + std::to_string(i) + ']';
+        config* inst_conf;
+        r = conf->get(path.c_str(), &inst_conf);
+        if(!r)
+        {
+            instances_.push_back(instance(this, inst_conf));
+        }
+        else
+        {
+            break;
+        }
+    }
+    if(!instances_.size())
+    {
+        instances_.push_back(instance(this, conf));
+    }
+}
+
+int app::init()
+{
+    if(api_)
+    {
+        if(api_->version != current_api_interface_version)
+        {
+            jgb_fail("invalid api version. { api.version = %x, required = %x }",
+                     api_->version, current_api_interface_version);
+            return JGB_ERR_NOT_SUPPORT;
+        }
+
+        if(api_->init)
+        {
+            int r = api_->init(conf_);
+            if(!r)
+            {
+                jgb_ok("install %s. { desc = \"%s\" }", name_.c_str(), api_->desc);
+            }
+            else
+            {
+                jgb_fail("install %s. { init() = %d }", name_.c_str(), r);
+                return JGB_ERR_FAIL;
+            }
+        }
+    }
+    normal_ = true;
+    return 0;
+}
+
+void app::release()
 {
 }
 
@@ -95,12 +201,14 @@ int core::install(const char* name, jgb_api_t* api)
         return JGB_ERR_INVALID;
     }
 
-    struct app* papp = find(name);
+    app* papp = find(name);
     if(papp)
     {
         jgb_warning("app already exist. { name = %s, desc = %s }", name, papp->api_->desc);
         return JGB_ERR_IGNORED;
     }
+
+    jgb_info("install app. { name = %s }", name);
 
     std::string conf_file_path = std::string(conf_dir_) + '/' + name + ".json";
     config* conf = config_factory::create(conf_file_path.c_str());
@@ -108,38 +216,20 @@ int core::install(const char* name, jgb_api_t* api)
     //jgb_debug("{ name = %s, conf = %p }", name, conf);
 
     app_.push_back(app(name, api, conf));
-    struct app& app = app_.back();
-
-    if(api)
+    app& app = app_.back();
+    app.init();
+    if(app.normal_)
     {
-        if(api->version != current_api_interface_version)
+        for (auto & i : app.instances_)
         {
-            jgb_fail("invalid api version. { api.version = %x, required = %x }",
-                     api->version, current_api_interface_version);
-            return JGB_ERR_NOT_SUPPORT;
+            i.create();
         }
-
-        if(api->init)
-        {
-            int r = api->init(conf);
-            if(!r)
-            {
-                jgb_ok("install %s. { desc = \"%s\" }", name, api->desc);
-            }
-            else
-            {
-                jgb_fail("install %s. { init() = %d }", name, r);
-                return JGB_ERR_FAIL;
-            }
-        }
-
-        app.task_ = task(&app);
     }
 
     return 0;
 }
 
-struct app* core::find(const char* name)
+app* core::find(const char* name)
 {
     for(auto it = app_.begin(); it != app_.end(); ++it)
     {
@@ -165,51 +255,25 @@ struct core_worker
     }
 };
 
-int core::start(const char* path)
+int core::start(const char* name, int idx)
 {
-    std::string base;
-    int r;
-    const char* s = path;
-    const char* e;
-
-    jgb_fail("start task. { path = \"%s\" }", path);
-
-    r = jgb::jpath_parse(&s, &e);
-    jgb_debug("{ r = %d }", r);
-    if(!r)
+    app* app = find(name);
+    if(app && idx < (int) app->instances_.size())
     {
-        std::string name(s, e);
-        struct app* app;
-        app = find(name.c_str());
-        jgb_debug("{ app = %p }", app);
-        if(app)
-        {
-            return app->task_.start();
-        }
+        return app->instances_[idx].start();
     }
 
     return JGB_ERR_INVALID;
 }
 
-int core::stop(const char* path)
+int core::stop(const char* name, int idx)
 {
-    std::string base;
-    int r;
-    const char* s = path;
-    const char* e;
-
-    r = jgb::jpath_parse(&s, &e);
-    if(!r)
+    app* app = find(name);
+    if(app && idx < (int) app->instances_.size())
     {
-        std::string name(s, e);
-        struct app* app;
-        app = find(name.c_str());
-        if(app)
-        {
-            return app->task_.stop();
-        }
+        return app->instances_[idx].stop();
     }
-    jgb_fail("start task. { path = \"%s\" }", path);
+
     return JGB_ERR_INVALID;
 }
 

@@ -115,10 +115,10 @@ public:
 
     int get(const char* path, value** val);
     int get(const char* path, value** val, int& idx);
-    int get(const char* path, int& val);
-    int get(const char* path, double& val);
-    int get(const char* path, const char** val);
-    int get(const char* path, config** val);
+    int get(const char* path, int& ival);
+    int get(const char* path, double& rval);
+    int get(const char* path, const char** sval);
+    int get(const char* path, config** cval);
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 

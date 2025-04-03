@@ -12,6 +12,7 @@ namespace jgb
 
 class app;
 class task;
+class instance;
 
 enum task_state
 {
@@ -36,14 +37,31 @@ public:
 class task
 {
 public:
-    task(struct app* app = nullptr);
+    task(instance* instance);
     int start();
     int stop();
 
-    struct app* app_;
-    std::vector<worker> worker_;
+    instance* instance_;
+    std::vector<worker> workers_;
     bool run_; // 控制线程：true-运行; false-结束
     enum task_state state_;
+};
+
+class instance
+{
+public:
+    instance(app* app = nullptr, config* conf = nullptr);
+
+    int create();
+    void destroy();
+
+    int start();
+    int stop();
+
+    app* app_;
+    config* conf_;
+    bool normal_;
+    struct task task_;
 };
 
 class app
@@ -51,10 +69,17 @@ class app
 public:
     app(const char* name, jgb_api_t* api, config* conf);
 
+    int init();
+    void release();
+
     std::string name_;
     jgb_api_t* api_;
     config* conf_;
-    struct task task_;
+    std::vector<instance> instances_;
+    bool normal_; // is init ok
+
+    // 当前使用的应用接口的版本。
+    static const int current_api_interface_version = CURRENT_API_VERSION();
 };
 
 class core
@@ -64,10 +89,10 @@ public:
     int set_conf_dir(const char* dir);
     int install(const char* name, jgb_api_t* api = nullptr);
 
-    int start(const char* path);
-    int stop(const char* path);
+    int start(const char* name, int idx = 0);
+    int stop(const char* name, int idx = 0);
 
-    struct app* find(const char* name);
+    app* find(const char* name);
 
     // 保存全部应用的配置，整体为树状结构。
     config* app_conf_;
@@ -75,9 +100,6 @@ public:
     std::list<app> app_;
     // 存放配置文件的目录。
     const char* conf_dir_;
-
-    // 当前使用的应用接口版本。
-    static const int current_api_interface_version = CURRENT_API_VERSION();
 
 private:
     core();

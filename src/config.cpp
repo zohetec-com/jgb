@@ -354,7 +354,7 @@ int config::get(const char* path, value** val, int& idx)
     return JGB_ERR_INVALID;
 }
 
-int config::get(const char* path, int& val)
+int config::get(const char* path, int& ival)
 {
     int r;
     int idx;
@@ -368,14 +368,14 @@ int config::get(const char* path, int& val)
                 && pval->valid_
                 && pval->len_ > idx)
         {
-            val = pval->int_[idx];
+            ival = pval->int_[idx];
             return 0;
         }
     }
     return JGB_ERR_FAIL;
 }
 
-int config::get(const char* path, double& val)
+int config::get(const char* path, double& rval)
 {
     int r;
     int idx;
@@ -389,14 +389,14 @@ int config::get(const char* path, double& val)
                 && pval->valid_
                 && pval->len_ > idx)
         {
-            val = pval->real_[idx];
+            rval = pval->real_[idx];
             return 0;
         }
     }
     return JGB_ERR_FAIL;
 }
 
-int config::get(const char* path, const char** val)
+int config::get(const char* path, const char** sval)
 {
     int r;
     int idx;
@@ -410,14 +410,14 @@ int config::get(const char* path, const char** val)
                 && pval->valid_
                 && pval->len_ > idx)
         {
-            *val = pval->str_[idx];
+            *sval = pval->str_[idx];
             return 0;
         }
     }
     return JGB_ERR_FAIL;
 }
 
-int config::get(const char* path, config** val)
+int config::get(const char* path, config** cval)
 {
     int r;
     int idx;
@@ -431,7 +431,7 @@ int config::get(const char* path, config** val)
                 && pval->valid_
                 && pval->len_ > idx)
         {
-            *val = pval->conf_[idx];
+            *cval = pval->conf_[idx];
             return 0;
         }
     }
