@@ -225,13 +225,22 @@ int task::stop()
 instance::instance(app* app, config* conf)
     : app_(app),
       conf_(conf),
-      normal_(false),
-      task_(this)
+      normal_(false)
 {
+    jgb_assert(app_);
+    jgb_assert(conf_);
+    task_ = new task(this);
+}
+
+instance::~instance()
+{
+    jgb_assert(task_);
+    delete task_;
 }
 
 int instance::create()
 {
+    jgb_assert(app_);
     jgb_api_t* api_ = app_->api_;
     int r = 0;
     if(api_
@@ -245,6 +254,7 @@ int instance::create()
 
 void instance::destroy()
 {
+    jgb_assert(app_);
     jgb_api_t* api_ = app_->api_;
     if(api_
             && api_->destroy)
@@ -259,7 +269,7 @@ int instance::start()
     {
         return JGB_ERR_DENIED;
     }
-    return task_.start();
+    return task_->start();
 }
 
 int instance::stop()
@@ -268,7 +278,7 @@ int instance::stop()
     {
         return JGB_ERR_DENIED;
     }
-    return task_.stop();
+    return task_->stop();
 }
 
 app::app(const char* name, jgb_api_t* api, config* conf)
@@ -287,7 +297,8 @@ app::app(const char* name, jgb_api_t* api, config* conf)
         r = conf->get(path.c_str(), &inst_conf);
         if(!r)
         {
-            instances_.push_back(instance(this, inst_conf));
+            instance* inst = new instance(this, inst_conf);
+            instances_.push_back(inst);
         }
         else
         {
@@ -296,8 +307,18 @@ app::app(const char* name, jgb_api_t* api, config* conf)
     }
     if(!instances_.size())
     {
-        instances_.push_back(instance(this, conf));
+        instance* inst = new instance(this, conf);
+        instances_.push_back(inst);
     }
+}
+
+app::~app()
+{
+    for(auto& i: instances_)
+    {
+        delete i;
+    }
+    instances_.clear();
 }
 
 int app::init()
@@ -325,7 +346,7 @@ int app::init()
         }
         for (auto & i : instances_)
         {
-            i.create();
+            i->create();
         }
     }
     normal_ = true;
@@ -336,9 +357,12 @@ void app::release()
 {
     for (auto & i : instances_)
     {
-        i.stop();
-        i.destroy();
+        i->stop();
+        i->destroy();
+        // 在此执行删除可以吗？
+        delete i;
     }
+    instances_.clear();
     if(api_ && api_->release)
     {
         api_->release(conf_);
@@ -397,9 +421,9 @@ int core::install(const char* name, jgb_api_t* api)
     app_conf_->add(name, conf);
     //jgb_debug("{ name = %s, conf = %p }", name, conf);
 
-    app_.push_back(app(name, api, conf));
-    app& app = app_.back();
-    app.init();
+    papp = new app(name, api, conf);
+    app_.push_back(papp);
+    papp->init();
 
     return 0;
 }
@@ -408,20 +432,20 @@ void core::uninstall_all()
 {
     for(auto it = app_.rbegin(); it != app_.rend(); ++it)
     {
-        it->release();
+        (*it)->release();
+        delete (*it);
     }
-
-    delete app_conf_;
     app_.clear();
+    app_conf_->clear();
 }
 
 app* core::find(const char* name)
 {
     for(auto it = app_.begin(); it != app_.end(); ++it)
     {
-        if(!strcmp(name, (*it).name_.c_str()))
+        if(!strcmp(name, (*it)->name_.c_str()))
         {
-            return &(*it);
+            return (*it);
         }
     }
     return nullptr;
@@ -432,7 +456,7 @@ int core::start(const char* name, int idx)
     app* app = find(name);
     if(app && idx < (int) app->instances_.size())
     {
-        return app->instances_[idx].start();
+        return app->instances_[idx]->start();
     }
 
     return JGB_ERR_INVALID;
@@ -443,7 +467,7 @@ int core::stop(const char* name, int idx)
     app* app = find(name);
     if(app && idx < (int) app->instances_.size())
     {
-        return app->instances_[idx].stop();
+        return app->instances_[idx]->stop();
     }
 
     return JGB_ERR_INVALID;

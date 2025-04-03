@@ -110,6 +110,8 @@ public:
     config();
     ~config();
 
+    void clear();
+
     pair* find(const char* name, int n = 0);
     int add(const char* name, config* conf);
 

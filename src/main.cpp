@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
 
     for(int i=0; i<3; i++)
     {
+        jgb_debug("round %d", i + 1);
         jgb::core::get_instance()->install("test_core", &test_core);
         jgb::core::get_instance()->start("test_core");
         sleep(1);

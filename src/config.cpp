@@ -255,10 +255,16 @@ config::config()
 
 config::~config()
 {
+    clear();
+}
+
+void config::clear()
+{
     for (auto & i : pair_)
     {
         delete i;
     }
+    pair_.clear();
 }
 
 pair* config::find(const char* name, int n)

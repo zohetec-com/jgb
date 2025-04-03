@@ -35,7 +35,7 @@ public:
     std::string get_thread_id();
 
     int id_;
-    struct task* task_;
+    task* task_;
     bool normal_; // 线程的结束状态：true-正常; false-异常
     boost::thread* thread_;
 };
@@ -58,6 +58,7 @@ class instance
 {
 public:
     instance(app* app = nullptr, config* conf = nullptr);
+    ~instance();
 
     int create();
     void destroy();
@@ -68,13 +69,14 @@ public:
     app* app_;
     config* conf_;
     bool normal_;
-    struct task task_;
+    task* task_;
 };
 
 class app
 {
 public:
     app(const char* name, jgb_api_t* api, config* conf);
+    ~app();
 
     int init();
     void release();
@@ -82,7 +84,7 @@ public:
     std::string name_;
     jgb_api_t* api_;
     config* conf_;
-    std::vector<instance> instances_;
+    std::vector<instance*> instances_;
     bool normal_; // is init ok
 
     // 当前使用的应用接口的版本。
@@ -108,7 +110,7 @@ public:
     // 保存全部应用的配置，整体为树状结构。
     config* app_conf_;
     // 保存全部应用的相关信息：逻辑接口、配置入口、任务。
-    std::list<app> app_;
+    std::list<app*> app_;
     // 存放配置文件的目录。
     const char* conf_dir_;
 
