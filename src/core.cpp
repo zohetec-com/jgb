@@ -310,7 +310,6 @@ int app::init()
                      api_->version, current_api_interface_version);
             return JGB_ERR_NOT_SUPPORT;
         }
-
         if(api_->init)
         {
             int r = api_->init(conf_);
@@ -324,6 +323,10 @@ int app::init()
                 return JGB_ERR_FAIL;
             }
         }
+        for (auto & i : instances_)
+        {
+            i.create();
+        }
     }
     normal_ = true;
     return 0;
@@ -331,6 +334,15 @@ int app::init()
 
 void app::release()
 {
+    for (auto & i : instances_)
+    {
+        i.stop();
+        i.destroy();
+    }
+    if(api_ && api_->release)
+    {
+        api_->release(conf_);
+    }
 }
 
 core::core()
@@ -388,15 +400,19 @@ int core::install(const char* name, jgb_api_t* api)
     app_.push_back(app(name, api, conf));
     app& app = app_.back();
     app.init();
-    if(app.normal_)
-    {
-        for (auto & i : app.instances_)
-        {
-            i.create();
-        }
-    }
 
     return 0;
+}
+
+void core::uninstall_all()
+{
+    for(auto it = app_.rbegin(); it != app_.rend(); ++it)
+    {
+        it->release();
+    }
+
+    delete app_conf_;
+    app_.clear();
 }
 
 app* core::find(const char* name)

@@ -56,8 +56,15 @@ static int test_core_init(void* conf)
 
 static void test_core_release(void* conf)
 {
+    jgb::config* c = (jgb::config*) conf;
+    int r;
+    int ival;
+
     jgb_function();
-    conf = conf;
+
+    r = c->get("p0", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 250402);
 }
 
 static loop_ptr_t loops[] = { tsk_loop0, tsk_loop1, nullptr };

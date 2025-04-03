@@ -114,6 +114,7 @@ public:
     int add(const char* name, config* conf);
 
     int get(const char* path, value** val);
+    // 为什么需要这个？
     int get(const char* path, value** val, int& idx);
     int get(const char* path, int& ival);
     int get(const char* path, double& rval);

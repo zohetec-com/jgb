@@ -28,7 +28,11 @@
 #include <stdarg.h>
 #include <assert.h>
 
+#ifdef DEBUG
 #define jgb_assert(x)           assert(x)
+#else
+#define jgb_assert(x)
+#endif
 
 #define jgb_debug(fmt, ...)     fprintf(stderr, "[%s:%d][DEBUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 #define jgb_info(fmt, ...)      fprintf(stderr, "[%s:%d][INFO] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)

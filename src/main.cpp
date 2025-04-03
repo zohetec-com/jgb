@@ -45,13 +45,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    jgb::core::get_instance()->install("test_core", &test_core);
-
     for(int i=0; i<3; i++)
     {
+        jgb::core::get_instance()->install("test_core", &test_core);
         jgb::core::get_instance()->start("test_core");
         sleep(1);
-        jgb::core::get_instance()->stop("test_core");
+        jgb::core::get_instance()->uninstall_all();
     }
 
     return 0;

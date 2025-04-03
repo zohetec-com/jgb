@@ -93,8 +93,12 @@ class core
 {
 public:
     static core* get_instance();
+
     int set_conf_dir(const char* dir);
+
     int install(const char* name, jgb_api_t* api = nullptr);
+    // uninstall all app.
+    void uninstall_all();
 
     int start(const char* name, int idx = 0);
     int stop(const char* name, int idx = 0);
