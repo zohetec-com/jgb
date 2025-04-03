@@ -1,26 +1,42 @@
 #include "core.h"
 
+static bool tsk_init_called = false;
+uint tsk_loop0_count = 0;
+uint tsk_loop1_count = 0;
+
 static int tsk_init(void* w)
 {
-    jgb_debug("%p", w);
+    w = w;
+    jgb_function();
+    jgb_assert(!tsk_init_called);
+    tsk_init_called = true;
     return 0;
 }
 
 static int tsk_loop0(void* w)
 {
-    jgb_debug("%p", w);
+    w = w;
+    jgb_assert(tsk_init_called);
+    ++ tsk_loop0_count;
     return 0;
 }
 
 static int tsk_loop1(void* w)
 {
-    jgb_debug("%p", w);
+    w = w;
+    jgb_assert(tsk_init_called);
+    ++ tsk_loop1_count;
     return 0;
 }
 
 static void tsk_exit(void* w)
 {
-    jgb_debug("%p", w);
+    w = w;
+    jgb_assert(tsk_init_called);
+    jgb_assert(tsk_loop0_count > 0);
+    jgb_assert(tsk_loop1_count > 0);
+    jgb_debug("{ tsk_loop0_count = %u , tsk_loop0_count = %u }",
+              tsk_loop0_count, tsk_loop1_count);
 }
 
 static int test_core_init(void* conf)
@@ -55,7 +71,7 @@ static jgb_task_t task
 
 jgb_app_t test_core
 {
-    .version = MAKE_APP_VERSION(0, 1),
+    .version = MAKE_API_VERSION(0, 1),
     .desc = "test core",
     .init = test_core_init,
     .release = test_core_release,

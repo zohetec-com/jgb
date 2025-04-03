@@ -10,8 +10,8 @@ typedef struct jgb_task
     void (*exit)(void* worker);
 } jgb_task_t;
 
-#define MAKE_APP_VERSION(major,minor)   ((major<<8)|(minor & 0xFF))
-#define CURRENT_APP_VERSION()           MAKE_APP_VERSION(0, 1)
+#define MAKE_API_VERSION(major,minor)   ((major<<8)|(minor & 0xFF))
+#define CURRENT_API_VERSION()           MAKE_API_VERSION(0, 1)
 
 typedef struct jgb_app
 {
