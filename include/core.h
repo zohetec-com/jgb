@@ -17,10 +17,7 @@ class instance;
 enum task_state
 {
     task_state_idle,
-    task_state_staring, // 在创建 worker 0 工作线程之前。
     task_state_running,
-    task_state_stopping,
-    task_state_exiting,
     task_state_aborted
 };
 
@@ -36,6 +33,8 @@ public:
 
     int id_;
     task* task_;
+    bool run_;
+    bool exited_;  // 线程是否已结束循环。
     bool normal_; // 线程的结束状态：true-正常; false-异常
     boost::thread* thread_;
 };
@@ -52,6 +51,13 @@ public:
     std::vector<worker> workers_;
     bool run_; // 控制线程：true-运行; false-结束
     enum task_state state_;
+
+private:
+    int start_single();
+    int stop_single();
+
+    int start_multiple();
+    int stop_multiple();
 };
 
 class instance

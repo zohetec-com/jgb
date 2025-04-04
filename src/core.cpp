@@ -19,7 +19,8 @@ struct core_worker
             return;
         }
 
-        jgb_assert(!w->normal_);
+        jgb_assert(!w->exited_);
+        jgb_assert(w->normal_);
         jgb_assert(w->task_);
         jgb_assert(w->task_->instance_);
         jgb_assert(w->task_->instance_->app_);
@@ -27,63 +28,43 @@ struct core_worker
         jgb_assert(w->task_->instance_->app_->api_->loop);
         jgb_assert(w->task_->instance_->app_->api_->loop->loops[w->id_]);
 
-        jgb_loop_t* loop = w->task_->instance_->app_->api_->loop;
-        task* task = w->task_;
         int r;
+        jgb_loop_t* loop = w->task_->instance_->app_->api_->loop;
+        bool single = w->task_->workers_.size() == 1;
 
-        if(!w->id_)
+        if(single)
         {
+            jgb_assert(!w->id_);
             if(loop->setup)
             {
                 r = loop->setup(w);
                 if(r)
                 {
+                    w->exited_ = true;
+                    w->normal_ = false;
                     return;
                 }
             }
-
-            for (auto & i : task->workers_)
-            {
-                if(i.id_)
-                {
-                    i.start();
-                }
-            }
-
-            task->state_ = task_state_running;
         }
 
-        while(task->run_)
+        while(w->run_)
         {
             r = loop->loops[w->id_](w);
             if(r)
             {
+                w->normal_ = false;
                 jgb_fail("{ r = %d, id = %d }", r, w->id_);
                 break;
             }
         }
+        w->exited_ = true;
 
-        if(!r)
+        if(single)
         {
-            w->normal_ = true;
-        }
-
-        if(!w->id_)
-        {
-            for (auto & i : task->workers_)
-            {
-                if(i.id_)
-                {
-                    i.stop();
-                }
-            }
-
             if(loop->exit)
             {
                 loop->exit(w);
             }
-
-            task->state_ = task_state_exiting;
         }
 
         jgb_debug("loop exit. { id = %d }", w->id_);
@@ -93,6 +74,8 @@ struct core_worker
 worker::worker(int id, task* task)
     : id_(id),
       task_(task),
+      run_(false),
+      exited_(false),
       normal_(false),
       thread_(nullptr)
 {
@@ -103,15 +86,16 @@ int worker::start()
     if(!thread_)
     {
         struct core_worker cw;
-        normal_ = false;
+        run_ = true;
+        exited_ = false;
+        normal_ = true;
         thread_ = new boost::thread(cw, this);
-
         return 0;
     }
     else
     {
         jgb_bug();
-        return JGB_ERR_DENIED;
+        return JGB_ERR_FAIL;
     }
 }
 
@@ -119,13 +103,12 @@ int worker::stop()
 {
     if(thread_)
     {
-        jgb_assert(!task_->run_);
+        run_ = false;
         jgb_debug("start jont thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
         thread_->join();
         jgb_debug("jont thread done. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
         delete thread_;
         thread_ = nullptr;
-        return 0;
     }
     return 0;
 }
@@ -158,68 +141,167 @@ task::task(instance *instance)
             && app->api_->loop)
     {
         jgb_loop_t* loop = app->api_->loop;
-        for(int i=0;;i++)
+        for(int i=0; loop->loops[i]; i++)
         {
-            if(loop->loops[i])
+            jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
+            workers_.push_back(worker(i, this));
+        }
+    }
+}
+
+int task::start_single()
+{
+    jgb_assert(run_);
+    jgb_assert(workers_.size() == 1);
+    workers_[0].start();
+    return 0;
+}
+
+int task::start_multiple()
+{
+    jgb_assert(run_);
+    jgb_assert(workers_.size() > 1);
+    jgb_assert(instance_);
+    jgb_assert(instance_->app_);
+    jgb_assert(instance_->app_->api_);
+    jgb_assert(instance_->app_->api_->loop);
+
+    jgb_loop_t* loop = instance_->app_->api_->loop;
+    int r;
+
+    if(loop->setup)
+    {
+        r = loop->setup(&workers_[0]);
+        if(r)
+        {
+            // TODO: 补充参数
+            jgb_fail("task setup.");
+            return JGB_ERR_FAIL;
+        }
+    }
+
+    for(auto i = workers_.begin(); i != workers_.end(); ++i)
+    {
+        i->start();
+    }
+
+    return 0;
+}
+
+// TODO: 线程安全。
+int task::start()
+{
+    if(workers_.size() > 0)
+    {
+        if(state_ == task_state_running)
+        {
+            return 0;
+        }
+        else if(state_ == task_state_idle || state_ == task_state_aborted)
+        {
+            // 启动任务
+            int r;
+            run_ = true;
+            if(workers_.size() > 1)
             {
-                jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
-                workers_.push_back(worker(i, this));
+                r =  start_multiple();
             }
             else
             {
-                break;
+                r = start_single();
             }
-        }
-    }
-}
-
-int task::start()
-{
-    if(!workers_.size())
-    {
-        return JGB_ERR_IGNORED;
-    }
-
-    if(state_ == task_state_running)
-    {
-        return 0;
-    }
-    else if(state_ == task_state_idle || state_ == task_state_aborted)
-    {
-        // 启动任务
-        state_ = task_state_staring;
-        run_ = true;
-        return workers_[0].start();
-    }
-    else
-    {
-        return JGB_ERR_RETRY;
-    }
-}
-
-int task::stop()
-{
-    if(!workers_.size())
-    {
-        return JGB_ERR_IGNORED;
-    }
-    if(state_ == task_state_running)
-    {
-        run_ = false;
-        // 竞争！-- 工作线程也要修改 state_
-        state_ = task_state_stopping;
-        int r = workers_[0].stop();
-        if(!r)
-        {
-            state_ = task_state_idle;
+            if(!r)
+            {
+                state_ = task_state_running;
+            }
+            else
+            {
+                // todo: 补充参数
+                jgb_fail("start task.");
+            }
+            return r;
         }
         else
         {
-            // ???
-            jgb_assert(0);
+            // TODO: 等待状态切换？
+            return JGB_ERR_RETRY;
         }
     }
+    else
+    {
+        return JGB_ERR_IGNORED;
+    }
+}
+
+int task::stop_single()
+{
+    jgb_assert(workers_.size() == 1);
+    return workers_[0].stop();
+}
+
+int task::stop_multiple()
+{
+    for(auto i = workers_.rbegin(); i != workers_.rend(); ++i)
+    {
+        i->stop();
+    }
+
+    jgb_assert(instance_);
+    jgb_assert(instance_->app_);
+    jgb_assert(instance_->app_->api_);
+    jgb_assert(instance_->app_->api_->loop);
+
+    jgb_loop_t* loop = instance_->app_->api_->loop;
+    if(loop->exit)
+    {
+        loop->exit(&workers_[0]);
+    }
+
     return 0;
+}
+
+// TODO: 线程安全。
+int task::stop()
+{
+    if(workers_.size() > 0)
+    {
+        if(state_ == task_state_running)
+        {
+            int r;
+            run_ = false;
+            if(workers_.size() > 1)
+            {
+                r = stop_multiple();
+            }
+            else
+            {
+                r = stop_single();
+            }
+            if(!r)
+            {
+                state_ = task_state_idle;
+            }
+            else
+            {
+                // TODO: 补充参数
+                jgb_fail("stop task.");
+            }
+            return r;
+        }
+        else if(state_ == task_state_idle || state_ == task_state_aborted)
+        {
+            return 0;
+        }
+        else
+        {
+            // TODO: 该如何处理？
+            return JGB_ERR_RETRY;
+        }
+    }
+    else
+    {
+        return JGB_ERR_IGNORED;
+    }
 }
 
 instance::instance(app* app, config* conf)
