@@ -3,6 +3,7 @@
 #include "error.h"
 #include "helper.h"
 #include <string>
+#include <dlfcn.h>
 
 namespace jgb
 {
@@ -363,20 +364,16 @@ int instance::stop()
     return task_->stop();
 }
 
-app::app(const char* name, jgb_api_t* api, config* conf)
-    : name_(name),
-      api_(api),
-      conf_(conf),
-      normal_(false)
+void app::create_instances()
 {
-    int r;
+    jgb_assert(conf_);
 
     instances_.resize(0);
     for(int i=0; ;i++)
     {
-        std::string path = "/" + std::string(name) + "/instance[" + std::to_string(i) + ']';
+        std::string path = "/" + std::string(name_) + "/instances[" + std::to_string(i) + ']';
         config* inst_conf;
-        r = conf->get(path.c_str(), &inst_conf);
+        int r = conf_->get(path.c_str(), &inst_conf);
         if(!r)
         {
             instance* inst = new instance(this, inst_conf);
@@ -389,9 +386,40 @@ app::app(const char* name, jgb_api_t* api, config* conf)
     }
     if(!instances_.size())
     {
-        instance* inst = new instance(this, conf);
+        instance* inst = new instance(this, conf_);
         instances_.push_back(inst);
     }
+}
+app::app(const char* name, jgb_api_t* api, config* conf)
+    : name_(name),
+      api_(api),
+      conf_(conf),
+      normal_(false),
+      lib_handle_(nullptr)
+{
+    create_instances();
+}
+
+app::app(const char* name, const char* library, config *conf)
+    : name_(name),
+      api_(nullptr),
+      conf_(conf),
+      normal_(false),
+      lib_handle_(nullptr)
+{
+    if(library)
+    {
+        lib_handle_ = dlopen(library, RTLD_NOW);
+        if(lib_handle_)
+        {
+            api_ = (jgb_api_t*) dlsym(lib_handle_, name);
+        }
+        else
+        {
+            jgb_fail("dlopen %s failed. { error = %s }", library, dlerror());
+        }
+    }
+    create_instances();
 }
 
 app::~app()
@@ -401,10 +429,15 @@ app::~app()
         delete i;
     }
     instances_.clear();
+    if(lib_handle_)
+    {
+        dlclose(lib_handle_);
+    }
 }
 
 int app::init()
 {
+    jgb_assert(!normal_);
     if(api_)
     {
         if(api_->version != current_api_interface_version)
@@ -482,7 +515,7 @@ int core::set_conf_dir(const char* dir)
     return 0;
 }
 
-int core::install(const char* name, jgb_api_t* api)
+int core::check(const char* name)
 {
     if(!name)
     {
@@ -496,18 +529,45 @@ int core::install(const char* name, jgb_api_t* api)
         return JGB_ERR_IGNORED;
     }
 
-    jgb_info("install app. { name = %s }", name);
-
-    std::string conf_file_path = std::string(conf_dir_) + '/' + name + ".json";
-    config* conf = config_factory::create(conf_file_path.c_str());
-    app_conf_->add(name, conf);
-    //jgb_debug("{ name = %s, conf = %p }", name, conf);
-
-    papp = new app(name, api, conf);
-    app_.push_back(papp);
-    papp->init();
-
     return 0;
+}
+
+int core::install(const char* name, jgb_api_t* api)
+{
+    int r;
+
+    r = check(name);
+    if(!r)
+    {
+        std::string conf_file_path = std::string(conf_dir_) + '/' + name + ".json";
+        config* conf = config_factory::create(conf_file_path.c_str());
+
+        app* papp = new app(name, api, conf);
+        app_conf_->add(name, papp->conf_);
+        app_.push_back(papp);
+        papp->init();
+    }
+
+    return r;
+}
+
+int core::install(const char* name, const char* library)
+{
+    int r;
+
+    r = check(name);
+    if(!r)
+    {
+        std::string conf_file_path = std::string(conf_dir_) + '/' + name + ".json";
+        config* conf = config_factory::create(conf_file_path.c_str());
+
+        app* papp = new app(name, library, conf);
+        app_conf_->add(name, papp->conf_);
+        app_.push_back(papp);
+        papp->init();
+    }
+
+    return r;
 }
 
 void core::uninstall_all()
