@@ -24,8 +24,17 @@
 #include "debug.h"
 #include <unistd.h>
 #include "core.h"
+#include <signal.h>
 
 extern jgb_api_t module;
+static bool exit_flag = false;
+
+// 处理 SIGINT 信号
+static void handler(int signum)
+{
+    jgb_notice("signal cached. { signum = %d }", signum);
+    exit_flag = true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -45,7 +54,22 @@ int main(int argc, char *argv[])
         }
     }
 
+    // 注册 SIGINT 信号处理函数
+    struct sigaction act = {};
+
+    // https://man7.org/linux/man-pages/man7/signal.7.html
+    act.sa_handler = &handler;
+    if (sigaction(SIGINT, &act, NULL) == -1) {
+        perror("sigaction");
+    }
+
     jgb::core::get_instance()->install("module", &module);
+
+    while(!exit_flag)
+    {
+        sleep(1);
+    }
+
     jgb::core::get_instance()->uninstall_all();
 
     return 0;
