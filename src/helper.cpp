@@ -39,13 +39,13 @@ int str_to_index(int& idx, const char* s, const char* e)
         {
             e = s + strlen(s) - 1;
         }
-        jgb_debug("{ e - s = %d }", (int)(e - s));
+        //jgb_debug("{ e - s = %d }", (int)(e - s));
         if(e > s + 1)
         {
             if(*s == '[' && *e == ']')
             {
                 std::string str(s + 1, e);
-                jgb_debug("{ str = %s }", str.c_str());
+                //jgb_debug("{ str = %s }", str.c_str());
                 return stoi(str, idx);
             }
         }

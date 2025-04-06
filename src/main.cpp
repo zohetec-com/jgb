@@ -25,6 +25,8 @@
 #include <unistd.h>
 #include "core.h"
 
+extern jgb_api_t module;
+
 int main(int argc, char *argv[])
 {
     jgb_info("jgb start.");
@@ -43,14 +45,8 @@ int main(int argc, char *argv[])
         }
     }
 
-    for(int i=0; i<3; i++)
-    {
-        jgb_debug("round %d", i + 1);
-        jgb::core::get_instance()->install("test_core", "libtest_core.so");
-        jgb::core::get_instance()->start("test_core");
-        sleep(1);
-        jgb::core::get_instance()->uninstall_all();
-    }
+    jgb::core::get_instance()->install("module", &module);
+    jgb::core::get_instance()->uninstall_all();
 
     return 0;
 }

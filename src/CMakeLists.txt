@@ -1,4 +1,4 @@
-add_library(jgb-core SHARED config.cpp config_factory.cpp helper.cpp core.cpp)
+add_library(jgb-core SHARED config.cpp config_factory.cpp helper.cpp core.cpp module.cpp)
 target_include_directories(jgb-core PRIVATE ../include)
 find_package(Boost COMPONENTS thread REQUIRED)
 target_link_libraries(jgb-core Boost::thread jansson)

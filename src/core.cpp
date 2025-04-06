@@ -107,7 +107,7 @@ int worker::stop()
         run_ = false;
         jgb_debug("start jont thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
         thread_->join();
-        jgb_debug("jont thread done. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
+        jgb_debug("jont thread done. { id = %d }", id_);
         delete thread_;
         thread_ = nullptr;
     }
@@ -371,7 +371,7 @@ void app::create_instances()
     instances_.resize(0);
     for(int i=0; ;i++)
     {
-        std::string path = "/" + std::string(name_) + "/instances[" + std::to_string(i) + ']';
+        std::string path = "/instances[" + std::to_string(i) + ']';
         config* inst_conf;
         int r = conf_->get(path.c_str(), &inst_conf);
         if(!r)
@@ -449,11 +449,7 @@ int app::init()
         if(api_->init)
         {
             int r = api_->init(conf_);
-            if(!r)
-            {
-                jgb_ok("install %s. { desc = \"%s\" }", name_.c_str(), api_->desc);
-            }
-            else
+            if(r)
             {
                 jgb_fail("install %s. { init() = %d }", name_.c_str(), r);
                 return JGB_ERR_FAIL;
@@ -465,6 +461,15 @@ int app::init()
         }
     }
     normal_ = true;
+    if(api_ && api_->desc)
+    {
+        jgb_ok("install app. { name = \"%s\", desc = \"%s\" }", name_.c_str(), api_->desc);
+    }
+    else
+    {
+        jgb_ok("install app. { name = \"%s\" }", name_.c_str());
+
+    }
     return 0;
 }
 
@@ -525,7 +530,7 @@ int core::check(const char* name)
     app* papp = find(name);
     if(papp)
     {
-        jgb_warning("app already exist. { name = %s, desc = %s }", name, papp->api_->desc);
+        jgb_warning("app already exist. { name = \"%s\" }", name);
         return JGB_ERR_IGNORED;
     }
 
@@ -541,6 +546,10 @@ int core::install(const char* name, jgb_api_t* api)
     {
         std::string conf_file_path = std::string(conf_dir_) + '/' + name + ".json";
         config* conf = config_factory::create(conf_file_path.c_str());
+        if(!conf)
+        {
+            conf = new config;
+        }
 
         app* papp = new app(name, api, conf);
         app_conf_->add(name, papp->conf_);

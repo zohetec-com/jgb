@@ -251,6 +251,7 @@ std::ostream& operator<<(std::ostream& os, const config* conf)
 
 config::config()
 {
+    jgb_assert(!pair_.size());
 }
 
 config::~config()
@@ -353,7 +354,7 @@ int config::get(const char* path, value** val, int& idx)
         r = get_base_index(path, base, idx);
         if(!r)
         {
-            jgb_debug("{ path = %s, base = %s, idx = %d}", path, base.c_str(), idx);
+            //jgb_debug("{ path = %s, base = %s, idx = %d}", path, base.c_str(), idx);
             return get(base.c_str(), val);
         }
     }
