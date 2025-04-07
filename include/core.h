@@ -82,7 +82,6 @@ class app
 {
 public:
     app(const char* name, jgb_api_t* api, config* conf);
-    app(const char* name, const char* library, config* conf);
     ~app();
 
     int init();
@@ -93,7 +92,6 @@ public:
     config* conf_;
     std::vector<instance*> instances_;
     bool normal_; // is init ok
-    void* lib_handle_;
 
     // 当前使用的应用接口的版本。
     static const int current_api_interface_version = CURRENT_API_VERSION();
@@ -110,7 +108,6 @@ public:
     int set_conf_dir(const char* dir);
 
     int install(const char* name, jgb_api_t* api = nullptr);
-    int install(const char* name, const char* library);
     // uninstall all app.
     void uninstall_all();
 

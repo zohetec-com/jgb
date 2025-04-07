@@ -394,31 +394,8 @@ app::app(const char* name, jgb_api_t* api, config* conf)
     : name_(name),
       api_(api),
       conf_(conf),
-      normal_(false),
-      lib_handle_(nullptr)
+      normal_(false)
 {
-    create_instances();
-}
-
-app::app(const char* name, const char* library, config *conf)
-    : name_(name),
-      api_(nullptr),
-      conf_(conf),
-      normal_(false),
-      lib_handle_(nullptr)
-{
-    if(library)
-    {
-        lib_handle_ = dlopen(library, RTLD_NOW);
-        if(lib_handle_)
-        {
-            api_ = (jgb_api_t*) dlsym(lib_handle_, name);
-        }
-        else
-        {
-            jgb_fail("dlopen %s failed. { error = %s }", library, dlerror());
-        }
-    }
     create_instances();
 }
 
@@ -429,10 +406,6 @@ app::~app()
         delete i;
     }
     instances_.clear();
-    if(lib_handle_)
-    {
-        dlclose(lib_handle_);
-    }
 }
 
 int app::init()
@@ -552,25 +525,6 @@ int core::install(const char* name, jgb_api_t* api)
         }
 
         app* papp = new app(name, api, conf);
-        app_conf_->add(name, papp->conf_);
-        app_.push_back(papp);
-        papp->init();
-    }
-
-    return r;
-}
-
-int core::install(const char* name, const char* library)
-{
-    int r;
-
-    r = check(name);
-    if(!r)
-    {
-        std::string conf_file_path = std::string(conf_dir_) + '/' + name + ".json";
-        config* conf = config_factory::create(conf_file_path.c_str());
-
-        app* papp = new app(name, library, conf);
         app_conf_->add(name, papp->conf_);
         app_.push_back(papp);
         papp->init();

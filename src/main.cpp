@@ -32,7 +32,7 @@ static bool exit_flag = false;
 // 处理 SIGINT 信号
 static void handler(int signum)
 {
-    jgb_notice("signal cached. { signum = %d }", signum);
+    jgb_notice("signal catched. { signum = %d }", signum);
     exit_flag = true;
 }
 
