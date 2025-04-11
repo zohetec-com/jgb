@@ -105,9 +105,9 @@ int worker::stop()
     if(thread_)
     {
         run_ = false;
-        jgb_debug("stop jont thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
+        jgb_debug("join thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
         thread_->join();
-        jgb_debug("jont thread done. { id = %d }", id_);
+        jgb_debug("join thread done. { id = %d }", id_);
         delete thread_;
         thread_ = nullptr;
     }
