@@ -41,7 +41,7 @@ static void import(jgb::config* conf)
             if(r)
             {
                 struct lib_info info;
-                handle = dlopen(file, RTLD_NOW);
+                handle = dlopen(file, RTLD_NOW | RTLD_GLOBAL);
                 if(handle)
                 {
                     jgb_ok("load library. { file = \"%s\" }", file);
