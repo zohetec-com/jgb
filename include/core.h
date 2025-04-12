@@ -63,7 +63,7 @@ private:
 class instance
 {
 public:
-    instance(app* app = nullptr, config* conf = nullptr);
+    instance(int id, app* app = nullptr, config* conf = nullptr);
     ~instance();
 
     int create();
@@ -76,6 +76,8 @@ public:
     config* conf_;
     bool normal_;
     task* task_;
+    // 实例的编号，从 0 开始。
+    int id_;
     // 用户数据
     void* user_;
 };

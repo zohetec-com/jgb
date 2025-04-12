@@ -192,6 +192,7 @@ int task::start_multiple()
 // TODO: 线程安全。
 int task::start()
 {
+    jgb_debug("{ workers_.size() = %lu }", workers_.size());
     if(workers_.size() > 0)
     {
         if(state_ == task_state_running)
@@ -200,6 +201,9 @@ int task::start()
         }
         else if(state_ == task_state_idle || state_ == task_state_aborted)
         {
+            jgb_debug("start task. { name = %s, id = %d }",
+                      instance_->app_->name_.c_str(), instance_->id_);
+
             // 启动任务
             int r;
             run_ = true;
@@ -268,6 +272,9 @@ int task::stop()
     {
         if(state_ == task_state_running)
         {
+            jgb_debug("stop task. { name = %s, id = %d }",
+                      instance_->app_->name_.c_str(), instance_->id_);
+
             int r;
             run_ = false;
             if(workers_.size() > 1)
@@ -305,10 +312,11 @@ int task::stop()
     }
 }
 
-instance::instance(app* app, config* conf)
+instance::instance(int id, app* app, config* conf)
     : app_(app),
       conf_(conf),
       normal_(false),
+      id_(id),
       user_(nullptr)
 {
     jgb_assert(app_);
@@ -349,6 +357,7 @@ void instance::destroy()
 
 int instance::start()
 {
+    jgb_debug("start instance.{ name = %s, id = %d, normal_ = %d }", app_->name_.c_str(), id_, normal_);
     if(!normal_)
     {
         return JGB_ERR_DENIED;
@@ -377,7 +386,7 @@ void app::create_instances()
         int r = conf_->get(path.c_str(), &inst_conf);
         if(!r)
         {
-            instance* inst = new instance(this, inst_conf);
+            instance* inst = new instance(i, this, inst_conf);
             instances_.push_back(inst);
         }
         else
@@ -387,7 +396,7 @@ void app::create_instances()
     }
     if(!instances_.size())
     {
-        instance* inst = new instance(this, conf_);
+        instance* inst = new instance(0, this, conf_);
         instances_.push_back(inst);
     }
 }
@@ -437,11 +446,11 @@ int app::init()
     normal_ = true;
     if(api_ && api_->desc)
     {
-        jgb_ok("install app. { name = \"%s\", desc = \"%s\" }", name_.c_str(), api_->desc);
+        jgb_ok("app installed. { name = \"%s\", desc = \"%s\" }", name_.c_str(), api_->desc);
     }
     else
     {
-        jgb_ok("install app. { name = \"%s\" }", name_.c_str());
+        jgb_ok("app installed. { name = \"%s\" }", name_.c_str());
 
     }
     return 0;
