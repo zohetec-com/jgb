@@ -76,6 +76,8 @@ public:
     config* conf_;
     bool normal_;
     task* task_;
+    // 用户数据
+    void* user_;
 };
 
 class app

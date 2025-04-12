@@ -308,7 +308,8 @@ int task::stop()
 instance::instance(app* app, config* conf)
     : app_(app),
       conf_(conf),
-      normal_(false)
+      normal_(false),
+      user_(nullptr)
 {
     jgb_assert(app_);
     jgb_assert(conf_);
