@@ -1,7 +1,7 @@
 add_library(jgb-core SHARED config.cpp config_factory.cpp helper.cpp core.cpp module.cpp)
 target_include_directories(jgb-core PRIVATE ../include)
-find_package(Boost COMPONENTS thread REQUIRED)
-target_link_libraries(jgb-core Boost::thread jansson)
+find_package(Boost COMPONENTS thread chrono REQUIRED)
+target_link_libraries(jgb-core Boost::thread Boost::chrono jansson)
 install(TARGETS jgb-core)
 
 add_executable(jgb main.cpp)

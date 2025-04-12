@@ -27,6 +27,8 @@
 #include <math.h>
 #include <stdexcept>
 #include <string.h>
+#include <boost/chrono.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace jgb
 {
@@ -186,6 +188,11 @@ int stoi(const std::string &str, int& v)
 
     jgb_debug("{ str = %s}", str.c_str());
     return JGB_ERR_INVALID;
+}
+
+void sleep(int ms)
+{
+    boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
 }
 
 } // namespace jgb
