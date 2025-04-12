@@ -34,6 +34,13 @@ static void handler(int signum)
 {
     jgb_notice("signal catched. { signum = %d }", signum);
     exit_flag = true;
+
+    static int count = 0;
+    ++ count;
+    if(count > 10)
+    {
+        exit(1);
+    }
 }
 
 int main(int argc, char *argv[])
