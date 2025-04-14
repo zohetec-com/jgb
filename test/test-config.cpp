@@ -1,5 +1,6 @@
 #include "helper.h"
 #include "config_factory.h"
+#include "app.h"
 
 static void test_null_conf()
 {
@@ -333,7 +334,7 @@ static void test_get_dev_info()
     delete conf;
 }
 
-int main()
+int test_main(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
@@ -352,3 +353,15 @@ int main()
 
     return 0;
 }
+
+jgb_api_t test_config
+{
+    .version = MAKE_API_VERSION(0, 1),
+    .desc = "test config",
+    .init = test_main,
+    .release = nullptr,
+    .create = nullptr,
+    .destroy = nullptr,
+    .commit = nullptr,
+    .loop = nullptr
+};

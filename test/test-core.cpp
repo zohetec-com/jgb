@@ -1,13 +1,15 @@
-#include "core.h"
+#include "debug.h"
+#include "app.h"
+#include "config.h"
+#include <sys/types.h>
 
 static bool tsk_init_called = false;
 uint tsk_loop0_count = 0;
 uint tsk_loop1_count = 0;
 static bool tsk_exit_called = false;
 
-static int tsk_init(void* w)
+static int tsk_init(void*)
 {
-    w = w;
     jgb_function();
     jgb_assert(!tsk_init_called);
     jgb_assert(!tsk_loop0_count);
@@ -17,27 +19,24 @@ static int tsk_init(void* w)
     return 0;
 }
 
-static int tsk_loop0(void* w)
+static int tsk_loop0(void*)
 {
-    w = w;
     jgb_assert(tsk_init_called);
     jgb_assert(!tsk_exit_called);
     ++ tsk_loop0_count;
     return 0;
 }
 
-static int tsk_loop1(void* w)
+static int tsk_loop1(void*)
 {
-    w = w;
     jgb_assert(tsk_init_called);
     jgb_assert(!tsk_exit_called);
     ++ tsk_loop1_count;
     return 0;
 }
 
-static void tsk_exit(void* w)
+static void tsk_exit(void*)
 {
-    w = w;
     jgb_assert(tsk_init_called);
     jgb_assert(!tsk_exit_called);
     jgb_assert(tsk_loop0_count);

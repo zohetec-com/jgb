@@ -316,7 +316,8 @@ config* config_factory::create(const char* buf, int len)
     }
     else
     {
-        jgb_fail("decode: %.*s", len, buf);
+        jgb_fail("decode data. { data = %.*s, code = %d, text = \"%s\" }",
+                 len, buf, json_error_code(&error), error.text);
         return nullptr;
     }
 }
@@ -340,7 +341,8 @@ config* config_factory::create(const char* file_path)
     }
     else
     {
-        jgb_fail("decode: %s", file_path);
+        jgb_fail("decode file. { file = %s, code = %d, text = \"%s\" }",
+                 file_path, json_error_code(&error), error.text);
         return nullptr;
     }
 }
@@ -658,7 +660,8 @@ bool config_factory::update(config* conf, const char* buf, int len)
     }
     else
     {
-        jgb_fail("decode: %.*s", len, buf);
+        jgb_fail("decode data. { data = %.*s, code = %d, text = \"%s\" }",
+                 len, buf, json_error_code(&error), error.text);
         return false;
     }
 }
@@ -684,7 +687,8 @@ bool config_factory::update(config* conf, const char* file_path)
     }
     else
     {
-        jgb_fail("decode: %s", file_path);
+        jgb_fail("decode file. { file = %s, code = %d, text = \"%s\" }",
+                 file_path, json_error_code(&error), error.text);
         return false;
     }
 }
