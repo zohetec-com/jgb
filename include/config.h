@@ -124,6 +124,12 @@ public:
     int get(const char* path, std::string& sval);
     int get(const char* path, config** cval);
 
+    int set(const char* name, int64_t ival, bool create=true);
+    int set(const char* name, double rval, bool create=true);
+    int set(const char* name, const char* sval, bool create=true);
+    int set(const char* name, const std::string& sval, bool create=true);
+    //int set(const char* name, config* cval, bool create=true);
+
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 
     //int set_value(const char* path, const value& val);

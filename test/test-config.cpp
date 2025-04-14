@@ -334,11 +334,34 @@ static void test_get_dev_info()
     delete conf;
 }
 
+static void test_set()
+{
+    jgb::config conf;
+    int r;
+    for(int i=0; i<2; i++)
+    {
+        r = conf.set("type", "request");
+        jgb_assert(!r);
+        r = conf.set("id", "abc123");
+        jgb_assert(!r);
+        r = conf.set("mts", time(NULL));
+        jgb_assert(!r);
+        r = conf.set("command", "get /wsapi/v1/cvcam/sync/get_dev_info");
+        jgb_assert(!r);
+        r = conf.set("pai", 3.14);
+        jgb_assert(!r);
+        r = conf.set("str", std::string("hello"));
+        jgb_assert(!r);
+    }
+    std::cout << &conf << std::endl;
+}
+
 int test_main(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_set();
     test_null_conf();
     test_datatype();
     test_value();
