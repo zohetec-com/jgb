@@ -35,6 +35,7 @@ int jpath_parse(const char** start, const char** end);
 bool is_equal(double a, double b, double epsilon = 1e-6);
 int stoi(const std::string& str, int& v);
 void sleep(int ms);
+int64_t get_timestamp_ms(bool mono = false);
 
 } // namespace jgb
 #endif // HELPER_H

@@ -344,7 +344,7 @@ static void test_set()
         jgb_assert(!r);
         r = conf.set("id", "abc123");
         jgb_assert(!r);
-        r = conf.set("mts", time(NULL));
+        r = conf.set("mts", jgb::get_timestamp_ms());
         jgb_assert(!r);
         r = conf.set("command", "get /wsapi/v1/cvcam/sync/get_dev_info");
         jgb_assert(!r);
@@ -354,6 +354,7 @@ static void test_set()
         jgb_assert(!r);
     }
     std::cout << &conf << std::endl;
+    std::cout << conf.to_string() << std::endl;
 }
 
 int test_main(void*)
