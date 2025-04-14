@@ -424,6 +424,19 @@ int config::get(const char* path, const char** sval)
     return JGB_ERR_FAIL;
 }
 
+int config::get(const char* path, std::string& sval)
+{
+    int r;
+    const char* s;
+
+    r = get(path, &s);
+    if(!r)
+    {
+        sval = std::string(s);
+    }
+    return r;
+}
+
 int config::get(const char* path, config** cval)
 {
     int r;

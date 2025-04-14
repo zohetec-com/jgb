@@ -121,6 +121,7 @@ public:
     int get(const char* path, int& ival);
     int get(const char* path, double& rval);
     int get(const char* path, const char** sval);
+    int get(const char* path, std::string& sval);
     int get(const char* path, config** cval);
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
