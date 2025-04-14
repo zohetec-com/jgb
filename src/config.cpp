@@ -579,4 +579,11 @@ int config::get(const char* path, config** cval)
     return JGB_ERR_FAIL;
 }
 
+std::string config::to_string()
+{
+    std::ostringstream oss;
+    oss << this;
+    return oss.str();
+}
+
 }

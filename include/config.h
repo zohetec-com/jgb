@@ -132,6 +132,8 @@ public:
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 
+    std::string to_string();
+
     //int set_value(const char* path, const value& val);
 
 public:
