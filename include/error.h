@@ -34,7 +34,8 @@ enum jgb_error
     JGB_ERR_IGNORED,            // 系统忽略处理该请求：没有什么需要做的
     JGB_ERR_NOT_FOUND,          // 没有找到所请求的对象
     JGB_ERR_RETRY,              // 请重试：资源忙
-    JGB_ERR_END                 // 主动结束
+    JGB_ERR_END,                // 主动结束
+    JGB_ERR_SDK                 // 调用第三方 SDK 失败
 };
 
 #endif // ERROR_H
