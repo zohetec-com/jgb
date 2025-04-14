@@ -411,11 +411,8 @@ app::app(const char* name, jgb_api_t* api, config* conf)
 
 app::~app()
 {
-    for(auto& i: instances_)
-    {
-        delete i;
-    }
-    instances_.clear();
+    // 前置条件：已经调用过 release()。
+    jgb_assert(instances_.empty());
 }
 
 int app::init()

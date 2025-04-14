@@ -4,9 +4,11 @@
 #include <sys/types.h>
 
 static bool tsk_init_called = false;
-uint tsk_loop0_count = 0;
-uint tsk_loop1_count = 0;
+static uint tsk_loop0_count = 0;
+static uint tsk_loop1_count = 0;
 static bool tsk_exit_called = false;
+static bool create_called = false;
+static bool destroy_called = false;
 
 static int tsk_init(void*)
 {
@@ -46,7 +48,7 @@ static void tsk_exit(void*)
     tsk_exit_called = true;
 }
 
-static int test_core_init(void* conf)
+static int init(void* conf)
 {
     jgb::config* c = (jgb::config*) conf;
     int r;
@@ -66,7 +68,7 @@ static int test_core_init(void* conf)
     return 0;
 }
 
-static void test_core_release(void* conf)
+static void release(void* conf)
 {
     jgb::config* c = (jgb::config*) conf;
     int r;
@@ -78,6 +80,8 @@ static void test_core_release(void* conf)
     jgb_assert(tsk_exit_called);
     jgb_assert(tsk_loop0_count);
     jgb_assert(tsk_loop1_count);
+    jgb_assert(create_called);
+    jgb_assert(destroy_called);
 
     r = c->get("p0", ival);
     jgb_assert(!r);
@@ -88,6 +92,23 @@ static void test_core_release(void* conf)
     tsk_loop0_count = 0;
     tsk_loop1_count = 0;
     tsk_exit_called = false;
+    create_called = false;
+    destroy_called = false;
+}
+
+static int create(void*)
+{
+    jgb_assert(!create_called);
+    jgb_assert(!destroy_called);
+    create_called = true;
+    return 0;
+}
+
+static void destroy(void*)
+{
+    jgb_assert(create_called);
+    jgb_assert(!destroy_called);
+    destroy_called = true;
 }
 
 static loop_ptr_t loops[] = { tsk_loop0, tsk_loop1, nullptr };
@@ -103,10 +124,10 @@ jgb_api_t test_core
 {
     .version = MAKE_API_VERSION(0, 1),
     .desc = "test core",
-    .init = test_core_init,
-    .release = test_core_release,
-    .create = nullptr,
-    .destroy = nullptr,
+    .init = init,
+    .release = release,
+    .create = create,
+    .destroy = destroy,
     .commit = nullptr,
     .loop = &loop
 };
