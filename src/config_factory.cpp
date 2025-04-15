@@ -356,7 +356,7 @@ static bool is_compatibe_type(value* val, json_t* json)
     // TODO：优先使用 shema 定义的数据类型。
     if(json_array_get_type(json, &d_type, &is_bool))
     {
-        jgb_debug("{ d_type = %d, val->type_ %d }", (int) d_type, (int) val->type_);
+        //jgb_debug("{ d_type = %d, val->type_ %d }", (int) d_type, (int) val->type_);
         switch (val->type_)
         {
         case value::data_type::none:
@@ -489,7 +489,7 @@ static bool update_array(value* val, json_t* json)
 // 返回值：false-没有触发更新，true-触发更新。
 static bool update_config(config* conf, json_t* json)
 {
-#ifdef DEBUG
+#if 0
     char* json_text = json_dumps(json, 0);
     jgb_debug("json: %s", json_text);
     free(json_text);
@@ -505,7 +505,7 @@ static bool update_config(config* conf, json_t* json)
 
     json_object_foreach(json, key, json_val)
     {
-        jgb_debug("{ key = %s, count = %d }", key, count);
+        //jgb_debug("{ key = %s, count = %d }", key, count);
         pair* pr = conf->find(key);
         if(pr)
         {
@@ -530,7 +530,7 @@ static bool update_config(config* conf, json_t* json)
                             }
                             else
                             {
-                                jgb_debug("数组未更新。{ key = %s }", key);
+                                //jgb_debug("数组未更新。{ key = %s }", key);
                             }
                         }
                         break;
