@@ -357,11 +357,19 @@ static void test_set()
     std::cout << conf.to_string() << std::endl;
 }
 
+static void test_invalid()
+{
+    const char* buf = "invalid";
+    jgb::config* conf = jgb::config_factory::create(buf, strlen(buf));
+    jgb_assert(!conf);
+}
+
 int test_main(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_invalid();
     test_set();
     test_null_conf();
     test_datatype();
