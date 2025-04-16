@@ -173,6 +173,8 @@ static jgb::value* create_array(json_t* json)
                 {
                     json_val = json_array_get(json, i);
                     val->conf_[i] = create_config(json_val);
+                    val->conf_[i]->id_ = i;
+                    val->conf_[i]->uplink_ = val;
                     jgb_assert(val->conf_[i]);
                 }
                 return val;
@@ -211,10 +213,11 @@ static config* create_config(json_t* json)
         {
             case JSON_OBJECT:
                 {
-                    jgb::value* val = new jgb::value(jgb::value::data_type::object);
-                    val->valid_ = true;
-                    val->conf_[0] = create_config(json_val);
-                    conf->pair_.push_back(new pair(key, val));
+                    jgb::config* cval = create_config(json_val);
+                    if(cval)
+                    {
+                        conf->create(key, cval);
+                    }
                 }
                 break;
             case JSON_ARRAY:
@@ -222,7 +225,7 @@ static config* create_config(json_t* json)
                     jgb::value* val = create_array(json_val);
                     if(val)
                     {
-                        conf->pair_.push_back(new pair(key, val));
+                        conf->create(key, val);
                         if(val->type_ == jgb::value::data_type::none)
                         {
                             jgb_debug("{ jpath =  %s }",
@@ -232,44 +235,20 @@ static config* create_config(json_t* json)
                 }
                 break;
             case JSON_STRING:
-                {
-                    jgb::value* val = new jgb::value(jgb::value::data_type::string);
-                    val->valid_ = true;
-                    val->str_[0] = strdup(json_string_value(json_val));
-                    conf->pair_.push_back(new pair(key, val));
-                }
+                conf->set(key, json_string_value(json_val));
                 break;
             case JSON_INTEGER:
-                {
-                    jgb::value* val = new jgb::value(jgb::value::data_type::integer);
-                    val->valid_ = true;
-                    val->int_[0] = json_integer_value(json_val);
-                    conf->pair_.push_back(new pair(key, val));
-                }
+                conf->set(key, (int64_t) json_integer_value(json_val));
                 break;
             case JSON_REAL:
-                {
-                    jgb::value* val = new jgb::value(jgb::value::data_type::real);
-                    val->valid_ = true;
-                    val->real_[0] = json_real_value(json_val);
-                    conf->pair_.push_back(new pair(key, val));
-                }
+                conf->set(key, json_real_value(json_val));
                 break;
             case JSON_TRUE:
             case JSON_FALSE:
-                {
-                    // TODO：结合 schema 信息使用，适配参数（需要）使用别名的场景。
-                    jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, true);
-                    val->valid_ = true;
-                    val->int_[0] = json_typeof(json_val) == JSON_TRUE;
-                    conf->pair_.push_back(new pair(key, val));
-                }
+                conf->set(key, json_typeof(json_val) == JSON_TRUE, true, true);
                 break;
             case JSON_NULL:
-                {
-                    jgb::value* val = new jgb::value(jgb::value::data_type::none);
-                    conf->pair_.push_back(new pair(key, val));
-                }
+                conf->create(key);
                 break;
             default:
                 jgb_warning("unrecognized JSON type %d\n", json_typeof(json_val));

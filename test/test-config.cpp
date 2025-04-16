@@ -163,10 +163,16 @@ static void test_get_base_index()
     }
 }
 
-static void test_get(jgb::config* conf)
+static void test_get_and_test_path(jgb::config* conf)
 {
     int r;
     jgb::value* val;
+
+    {
+        std::string path;
+        conf->get_path(path);
+        jgb_assert(path == "/");
+    }
 
     r = conf->get("/p1", &val);
     jgb_assert(!r);
@@ -175,17 +181,60 @@ static void test_get(jgb::config* conf)
     jgb_assert(val->int_[0] == 123);
     jgb_assert(val->valid_);
 
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p1");
+    }
+
     int ival;
     const char* sval;
     double rval;
+
+    r = conf->get("/p27/x", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1000);
+
+    r = conf->get("/p27/y", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "abc"));
+
+    r = conf->get("/p27[1]/x", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 2000);
+
+    r = conf->get("/p27[1]/y", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "def"));
 
     r = conf->get("/p1", ival);
     jgb_assert(!r);
     jgb_assert(ival == 123);
 
+    r = conf->get("/p2", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p2");
+    }
+
     r = conf->get("/p2", rval);
     jgb_assert(!r);
     jgb_assert(jgb::is_equal(rval, 3.14));
+
+    r = conf->get("/p3", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p3");
+    }
 
     r = conf->get("/p3", &sval);
     jgb_assert(!r);
@@ -303,11 +352,174 @@ static void test_get(jgb::config* conf)
     jgb_assert(!r);
     jgb_assert(!ival);
 
+    r = conf->get("/p7/p71", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p71");
+    }
+
+    r = conf->get("/p7/p72", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p72");
+    }
+
+    r = conf->get("/p7/p73", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p73");
+    }
+
+    r = conf->get("/p7/p74", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p74");
+    }
+
+    r = conf->get("/p7/p75", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p75");
+    }
+
+    r = conf->get("/p7/p76", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p76");
+    }
+
+    r = conf->get("/p7/p77", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p77");
+    }
+
     r = conf->get("/p7/p78", &val);
     jgb_assert(!r);
     jgb_assert(val->type_ == jgb::value::data_type::object);
     jgb_assert(val->len_ == 2);
     jgb_assert(val->valid_);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78");
+    }
+
+    r = conf->get("/p7/p78/version", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 2204);
+
+    r = conf->get("/p7/p78/version", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        jgb_mark();
+        val->get_path(path);
+        jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78/version");
+    }
+
+    r = conf->get("/p7/p78[0]/version", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 2204);
+
+    r = conf->get("/p7/p78[0]/version", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        jgb_mark();
+        val->get_path(path);
+        jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78/version");
+    }
+
+    r = conf->get("/p7/p78/os", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "ubuntu"));
+
+    r = conf->get("/p7/p78/os", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78/os");
+    }
+
+    r = conf->get("/p7/p78[0]/os", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "ubuntu"));
+
+    r = conf->get("/p7/p78[0]/os", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78/os");
+    }
+
+    r = conf->get("/p7/p78[1]/version", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1210);
+
+    r = conf->get("/p7/p78[1]/version", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78[1]/version");
+    }
+
+    r = conf->get("/p7/p78[1]/os", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "debian"));
+
+    r = conf->get("/p7/p78[1]/os", &val);
+    jgb_assert(!r);
+
+    {
+        std::string path;
+        val->get_path(path);
+        //jgb_debug("{ path = %s }", path.c_str());
+        jgb_assert(path == "/p7/p78[1]/os");
+    }
 
     jgb::config* cval;
     r = conf->get("/p7", &cval);
@@ -339,7 +551,7 @@ static void test_create_update()
         jgb_assert(int_v != real_v);
     }
 
-    test_get(conf);
+    test_get_and_test_path(conf);
 
     // 以 json 文档更新 config。
     bool changed = jgb::config_factory::update(conf, "update.json");

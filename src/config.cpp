@@ -51,7 +51,8 @@ value::~value()
     }
 }
 
-value::value(data_type type, int len, bool is_array, bool is_bool)
+value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
+    : uplink_(uplink)
 {
     if(len > object_len_max)
     {
@@ -90,6 +91,8 @@ int value::get(const char* path, value** val)
         return JGB_ERR_INVALID;
     }
 
+    jgb_debug("get. { path = %s }", path);
+
     int r;
     const char* s = path;
     const char* e;
@@ -97,22 +100,26 @@ int value::get(const char* path, value** val)
     r = jpath_parse(&s, &e);
     if(r)
     {
+        jgb_debug("jpath_parse failed. { path = %s }", path);
         return r;
     }
+
+    jgb_debug("{ s = %.*s, type_ = %d, e = %c }", (int)(e - s), s, (int)type_, *e);
 
     if(*s != '\0')
     {
         if(type_ == data_type::object)
         {
+            // 注意：jpath_parse() 返回的 e 指向 ']' 的下一个字符。
             // 如果 s 是下标
-            if(*s == '[' && *e == ']')
+            if(s < e && *s == '[' && *(e - 1) == ']')
             {
                 int idx;
-                r = str_to_index(idx, s, e);
+                r = str_to_index(idx, s, e - 1);
                 if(!r && idx >= 0 && idx < len_)
                 {
-                    jgb_debug("{ jpath = %s }", e + 1);
-                    return conf_[idx]->get(e + 1, val);
+                    jgb_debug("{ jpath = %s, idx = %d }", e, idx);
+                    return conf_[idx]->get(e, val);
                 }
             }
             else
@@ -132,17 +139,50 @@ int value::get(const char* path, value** val)
     }
 }
 
-pair::pair(const char* name, value* value)
+void value::get_path(std::string& path)
+{
+    if(uplink_)
+    {
+        uplink_->get_path(path);
+    }
+    else
+    {
+        path += "/";
+    }
+
+    jgb_debug("{ path = %s }", path.c_str());
+}
+
+pair::pair(const char* name, value* value, config* uplink)
+    : value_(value)
+    , uplink_(uplink)
 {
     // 疑问：对 name 和 value 区别对待，这么做合适吗？
     name_ = strdup(name);
-    value_ = value;
 }
 
 pair::~pair()
 {
     free((void*) name_);
     delete value_;
+}
+
+void pair::get_path(std::string& path)
+{
+    if(uplink_)
+    {
+        uplink_->get_path(path);
+    }
+    else
+    {
+        jgb_assert(0);
+    }
+    if(path.back() != '/')
+    {
+        path += '/';
+    }
+    path += std::string(name_);
+    jgb_debug("{ name_ = %s, path = %s }", name_, path.c_str());
 }
 
 std::ostream& operator<<(std::ostream& os, const value* val)
@@ -249,7 +289,9 @@ std::ostream& operator<<(std::ostream& os, const config* conf)
     return os;
 }
 
-config::config()
+config::config(value *uplink, int id)
+    : uplink_(uplink),
+      id_(id)
 {
     jgb_assert(!pair_.size());
 }
@@ -270,6 +312,7 @@ void config::clear()
 
 pair* config::find(const char* name, int n)
 {
+    jgb_debug("find. { name = %.*s }", n, name);
     if(name)
     {
         for (auto it = pair_.begin(); it != pair_.end(); ++it)
@@ -293,29 +336,7 @@ pair* config::find(const char* name, int n)
     return nullptr;
 }
 
-int config::add(const char* name, config* conf)
-{
-    if(!name)
-    {
-        return JGB_ERR_INVALID;
-    }
-
-    pair* pr = find(name);
-    if(!pr)
-    {
-        jgb::value* val = new jgb::value(jgb::value::data_type::object);
-        val->conf_[0] = conf;
-        pair_.push_back(new pair(name, val));
-        return 0;
-    }
-    else
-    {
-        jgb_fail("config already exist. { name = %s }", name);
-        return JGB_ERR_IGNORED;
-    }
-}
-
-int config::set(const char* name, int64_t ival, bool create)
+int config::set(const char* name, int64_t ival, bool create, bool is_bool)
 {
     if(!name)
     {
@@ -327,9 +348,11 @@ int config::set(const char* name, int64_t ival, bool create)
     {
         if(create)
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::integer);
+            jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, is_bool);
             val->int_[0] = ival;
-            pair_.push_back(new pair(name, val));
+            val->valid_ = true;
+            pair_.push_back(new pair(name, val, this));
+            val->uplink_ = pair_.back();
             return 0;
         }
         return JGB_ERR_NOT_FOUND;
@@ -368,7 +391,9 @@ int config::set(const char* name, double rval, bool create)
         {
             jgb::value* val = new jgb::value(jgb::value::data_type::real);
             val->real_[0] = rval;
-            pair_.push_back(new pair(name, val));
+            val->valid_ = true;
+            pair_.push_back(new pair(name, val, this));
+            val->uplink_ = pair_.back();
             return 0;
         }
         return JGB_ERR_NOT_FOUND;
@@ -405,7 +430,10 @@ int config::set(const char* name, const char* sval, bool create)
             {
                 val->str_[0] = strdup(sval);
             }
-            pair_.push_back(new pair(name, val));
+            // 字符串类型没有 unset 状态？
+            val->valid_ = true;
+            pair_.push_back(new pair(name, val, this));
+            val->uplink_ = pair_.back();
             return 0;
         }
         return JGB_ERR_NOT_FOUND;
@@ -421,7 +449,7 @@ int config::set(const char* name, const char* sval, bool create)
         {
             pr->value_->str_[0] = strdup(sval);
         }
-        pr->value_->valid_ = true;
+        jgb_assert(pr->value_->valid_);
         return 0;
     }
     else
@@ -434,6 +462,63 @@ int config::set(const char* name, const char* sval, bool create)
 int config::set(const char* name, const std::string& sval, bool create)
 {
     return set(name, sval.c_str(), create);
+}
+
+int config::create(const char* name, config* cval)
+{
+    if(!name || !cval)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    pair* pr = find(name);
+    if(!pr)
+    {
+        jgb::value* val = new jgb::value(jgb::value::data_type::object);
+        cval->uplink_ = val;
+        val->conf_[0] = cval;
+        val->valid_ = true;
+        pair_.push_back(new pair(name, val, this));
+        val->uplink_ = pair_.back();
+        return 0;
+    }
+    jgb_fail("config already exist. { name = %s }", name);
+    return JGB_ERR_IGNORED;
+}
+
+int config::create(const char* name)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    pair* pr = find(name);
+    if(!pr)
+    {
+        jgb::value* val = new jgb::value(jgb::value::data_type::none);
+        pair_.push_back(new pair(name, val, this));
+        val->uplink_ = pair_.back();
+        return 0;
+    }
+    return JGB_ERR_IGNORED;
+}
+
+int config::create(const char* name, value* val)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    pair* pr = find(name);
+    if(!pr)
+    {
+        pair_.push_back(new pair(name, val, this));
+        val->uplink_ = pair_.back();
+        return 0;
+    }
+    return JGB_ERR_IGNORED;
 }
 
 int config::get(const char* path, value** val)
@@ -584,6 +669,25 @@ std::string config::to_string()
     std::ostringstream oss;
     oss << this;
     return oss.str();
+}
+
+void config::get_path(std::string& path)
+{
+    jgb_debug("{ uplink_ = %p }", uplink_);
+    if(uplink_)
+    {
+        uplink_->get_path(path);
+        if(id_)
+        {
+            path += '[' + std::to_string(id_) + ']';
+        }
+    }
+    else
+    {
+        path += "/";
+        jgb_assert(!id_);
+    }
+    jgb_debug("{ path = %s }", path.c_str());
 }
 
 }

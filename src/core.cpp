@@ -555,7 +555,7 @@ int core::install(const char* name, jgb_api_t* api)
         }
 
         app* papp = new app(name, api, conf);
-        app_conf_->add(name, papp->conf_);
+        app_conf_->create(name, papp->conf_);
         app_.push_back(papp);
         papp->init();
     }

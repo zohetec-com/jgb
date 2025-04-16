@@ -54,10 +54,16 @@ public:
         object
     };
 
-    value(data_type type = data_type::none, int len = 1, bool is_array = false, bool is_bool = false);
+    value(data_type type = data_type::none,
+          int len = 1,
+          bool is_array = false,
+          bool is_bool = false,
+          pair* uplink = nullptr);
     ~value();
 
     int get(const char* path, value** val);
+    // 返回 value 的 jpath。
+    void get_path(std::string& path);
 
     friend std::ostream& operator<<(std::ostream& os, const value* val);
 
@@ -89,55 +95,79 @@ public:
     // 处理长度为 1 的情况。
     bool is_array_;
     bool is_bool_;
+
+    // for jpath.
+    pair* uplink_;
 };
 
 class pair
 {
 public:
-    pair(const char* name, value* value);
+    pair(const char* name, value* value, config* uplink);
     ~pair();
+
+    // 返回 pair 的 jpath。
+    void get_path(std::string& path);
 
     friend std::ostream& operator<<(std::ostream& os, const pair* pr);
 
 public:
     const char* name_;
     value* value_;
+
+    // for jpath.
+    config* uplink_;
 };
 
 class config
 {
 public:
-    config();
+    config(value* uplink = nullptr, int id = 0);
     ~config();
+
+    // 返回 config 的 jpath。
+    void get_path(std::string& path);
 
     void clear();
 
     pair* find(const char* name, int n = 0);
-    int add(const char* name, config* conf);
 
     int get(const char* path, value** val);
-    // 为什么需要这个？
-    int get(const char* path, value** val, int& idx);
     int get(const char* path, int& ival);
     int get(const char* path, double& rval);
     int get(const char* path, const char** sval);
     int get(const char* path, std::string& sval);
     int get(const char* path, config** cval);
 
-    int set(const char* name, int64_t ival, bool create=true);
-    int set(const char* name, double rval, bool create=true);
-    int set(const char* name, const char* sval, bool create=true);
-    int set(const char* name, const std::string& sval, bool create=true);
-    //int set(const char* name, config* cval, bool create=true);
+    int set(const char* name, int64_t ival, bool create = true, bool is_bool = false);
+    int set(const char* name, double rval, bool create = true);
+    int set(const char* name, const char* sval, bool create = true);
+    int set(const char* name, const std::string& sval, bool create = true);
+    int create(const char* name, config* cval);
+    int create(const char* name);
+    int create(const char* name, value* val);
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 
     std::string to_string();
 
-    //int set_value(const char* path, const value& val);
-
 public:
     std::list<pair*> pair_;
+
+    // for jpath.
+    value* uplink_;
+    int id_;
+
+private:
+    // 根据 path 查找 val，及返回 path 所指定的索引号。
+    // 如果 path = "/a[2]", 则返回由 "/a" 确定的 val，及返回 idx = 2。
+    // 调用者得到 val 后，如果 val 是一个数组，可自行从 val 获取元素。
+    // 是实现其他 get() 接口的基础。
+    // 注意：
+    // val,idx 都仅是输出参数。不要误会以为 idx 是输入参数。
+    // 由 path 所确定的 val 只有一个，所以没得选择。
+    // val 可以是一个数组，但是数组的成员不是 value 类型，所以无法选择一个成员作为 val 返回。
+    int get(const char* path, value** val, int& idx);
 };
 
 }
