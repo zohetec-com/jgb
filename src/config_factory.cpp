@@ -22,8 +22,10 @@
  * IN THE SOFTWARE.
  */
 #include "config_factory.h"
+#include "core.h"
 #include <string.h>
 #include <jansson.h>
+#include <boost/filesystem.hpp>
 
 namespace jgb
 {
@@ -322,9 +324,42 @@ config* config_factory::create(const char* buf, int len)
     }
 }
 
+static int check_file_path(const char* file_path, std::string& path)
+{
+    if(!file_path || !file_path[0])
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    std::string path_x = std::string(file_path);
+    if(boost::filesystem::exists(path_x))
+    {
+        path = path_x;
+        return 0;
+    }
+
+    if(file_path[0] != '/')
+    {
+        path_x = std::string(jgb::core::get_instance()->conf_dir_) + '/' + path_x;
+        if(boost::filesystem::exists(path_x))
+        {
+            path = path_x;
+            return 0;
+        }
+    }
+
+    jgb_debug("文件不存在。{ file_path = %s }", file_path);
+
+    return JGB_ERR_NOT_FOUND;
+}
+
 config* config_factory::create(const char* file_path)
 {
-    if(!file_path)
+    int r;
+    std::string path;
+
+    r = check_file_path(file_path, path);
+    if(r)
     {
         return nullptr;
     }
@@ -332,7 +367,7 @@ config* config_factory::create(const char* file_path)
     json_t* json;
     json_error_t error;
 
-    json = json_load_file(file_path, 0, &error);
+    json = json_load_file(path.c_str(), 0, &error);
     if(json)
     {
         config* conf = jgb::create(json);
@@ -342,7 +377,7 @@ config* config_factory::create(const char* file_path)
     else
     {
         jgb_fail("decode file. { file = %s, code = %d, text = \"%s\" }",
-                 file_path, json_error_code(&error), error.text);
+                 path.c_str(), json_error_code(&error), error.text);
         return nullptr;
     }
 }
@@ -668,7 +703,16 @@ bool config_factory::update(config* conf, const char* buf, int len)
 
 bool config_factory::update(config* conf, const char* file_path)
 {
-    if(!conf || !file_path)
+    if(!conf)
+    {
+        return false;
+    }
+
+    int r;
+    std::string path;
+
+    r = check_file_path(file_path, path);
+    if(r)
     {
         return false;
     }
@@ -676,7 +720,7 @@ bool config_factory::update(config* conf, const char* file_path)
     json_t* json;
     json_error_t error;
 
-    json = json_load_file(file_path, 0, &error);
+    json = json_load_file(path.c_str(), 0, &error);
     if(json)
     {
         bool ret;
@@ -688,7 +732,7 @@ bool config_factory::update(config* conf, const char* file_path)
     else
     {
         jgb_fail("decode file. { file = %s, code = %d, text = \"%s\" }",
-                 file_path, json_error_code(&error), error.text);
+                 path.c_str(), json_error_code(&error), error.text);
         return false;
     }
 }
