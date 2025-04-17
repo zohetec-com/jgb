@@ -319,7 +319,7 @@ static int check_file_path(const char* file_path, std::string& path)
 
     if(file_path[0] != '/')
     {
-        path_x = std::string(jgb::core::get_instance()->conf_dir_) + '/' + path_x;
+        path_x = std::string(jgb::core::get_instance()->conf_dir()) + '/' + path_x;
         if(boost::filesystem::exists(path_x))
         {
             path = path_x;

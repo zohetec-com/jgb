@@ -509,6 +509,11 @@ core* core::get_instance()
     return &a;
 }
 
+config* core::root_conf()
+{
+    return app_conf_;
+}
+
 int core::set_conf_dir(const char* dir)
 {
     if(!dir)
@@ -521,6 +526,11 @@ int core::set_conf_dir(const char* dir)
     jgb_notice("jgb setting changed: { conf_dir_ = %s }", conf_dir_);
 
     return 0;
+}
+
+const char* core::conf_dir()
+{
+    return conf_dir_;
 }
 
 int core::check(const char* name)

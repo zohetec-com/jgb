@@ -132,7 +132,9 @@ class core
 public:
     static core* get_instance();
 
+    config* root_conf();
     int set_conf_dir(const char* dir);
+    const char* conf_dir();
 
     int install(const char* name, jgb_api_t* api = nullptr);
     // uninstall all app.
@@ -143,18 +145,19 @@ public:
 
     app* find(const char* name);
 
-    // 保存全部应用的配置，整体为树状结构。
-    config* app_conf_;
     // 保存全部应用的相关信息：逻辑接口、配置入口、任务。
     std::list<app*> app_;
-    // 存放配置文件的目录。
-    const char* conf_dir_;
 
 private:
     core();
     ~core();
 
     int check(const char* name);
+
+    // 保存全部应用的配置，整体为树状结构。
+    config* app_conf_;
+    // 存放配置文件的目录。
+    const char* conf_dir_;
 };
 
 } // namespace jgb
