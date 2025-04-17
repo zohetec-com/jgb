@@ -36,7 +36,7 @@ static int bool_type = (1 << JSON_TRUE) | (1 << JSON_FALSE);
 static int int_real_type = (1 << JSON_INTEGER) | (1 << JSON_REAL);
 
 static config* create_config(json_t* json);
-static bool update_config(config* conf, json_t* json);
+//static bool update_config(config* conf, json_t* json);
 
 // 1 要求数组元素的数据类型相同:
 //   - 不支持混用 object,array,string,integer/real,true/false,null。
@@ -360,7 +360,7 @@ config* config_factory::create(const char* file_path)
         return nullptr;
     }
 }
-
+#if 0
 // 判断 value 的数据类型与 json 数组是否兼容。
 static bool is_compatibe_type(value* val, json_t* json)
 {
@@ -715,4 +715,5 @@ bool config_factory::update(config* conf, const char* file_path)
         return false;
     }
 }
+#endif
 } // namespace jgb

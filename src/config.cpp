@@ -91,7 +91,7 @@ int value::get(const char* path, value** val)
         return JGB_ERR_INVALID;
     }
 
-    jgb_debug("get. { path = %s }", path);
+    //jgb_debug("get. { path = %s }", path);
 
     int r;
     const char* s = path;
@@ -104,7 +104,7 @@ int value::get(const char* path, value** val)
         return r;
     }
 
-    jgb_debug("{ s = %.*s, type_ = %d, e = %c }", (int)(e - s), s, (int)type_, *e);
+    //jgb_debug("{ s = %.*s, type_ = %d, e = %c }", (int)(e - s), s, (int)type_, *e);
 
     if(*s != '\0')
     {
@@ -118,13 +118,13 @@ int value::get(const char* path, value** val)
                 r = str_to_index(idx, s, e - 1);
                 if(!r && idx >= 0 && idx < len_)
                 {
-                    jgb_debug("{ jpath = %s, idx = %d }", e, idx);
+                    //jgb_debug("{ jpath = %s, idx = %d }", e, idx);
                     return conf_[idx]->get(e, val);
                 }
             }
             else
             {
-                jgb_debug("{ jpath = %s }", s);
+                //jgb_debug("{ jpath = %s }", s);
                 return conf_[0]->get(s, val);
             }
         }
@@ -139,7 +139,7 @@ int value::get(const char* path, value** val)
     }
 }
 
-void value::get_path(std::string& path)
+void value::get_path(std::string& path, int idx)
 {
     if(uplink_)
     {
@@ -149,8 +149,11 @@ void value::get_path(std::string& path)
     {
         path += "/";
     }
-
-    jgb_debug("{ path = %s }", path.c_str());
+    if(idx && idx < len_)
+    {
+        path += '[' + std::to_string(idx) + ']';
+    }
+    //jgb_debug("{ path = %s }", path.c_str());
 }
 
 pair::pair(const char* name, value* value, config* uplink)
@@ -182,7 +185,7 @@ void pair::get_path(std::string& path)
         path += '/';
     }
     path += std::string(name_);
-    jgb_debug("{ name_ = %s, path = %s }", name_, path.c_str());
+    //jgb_debug("{ name_ = %s, path = %s }", name_, path.c_str());
 }
 
 std::ostream& operator<<(std::ostream& os, const value* val)
@@ -312,7 +315,7 @@ void config::clear()
 
 pair* config::find(const char* name, int n)
 {
-    jgb_debug("find. { name = %.*s }", n, name);
+    //jgb_debug("find. { name = %.*s }", n, name);
     if(name)
     {
         for (auto it = pair_.begin(); it != pair_.end(); ++it)
@@ -673,7 +676,7 @@ std::string config::to_string()
 
 void config::get_path(std::string& path)
 {
-    jgb_debug("{ uplink_ = %p }", uplink_);
+    //jgb_debug("{ uplink_ = %p }", uplink_);
     if(uplink_)
     {
         uplink_->get_path(path);
@@ -687,7 +690,185 @@ void config::get_path(std::string& path)
         path += "/";
         jgb_assert(!id_);
     }
-    jgb_debug("{ path = %s }", path.c_str());
+    //jgb_debug("{ path = %s }", path.c_str());
+}
+
+int update(config* dest, config* src, std::list<std::string> *diff, bool dry_run)
+{
+    if(!dest || ! src)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    pair* pr;
+    for(auto i: src->pair_)
+    {
+        pr = dest->find(i->name_);
+        if(pr)
+        {
+            update(pr->value_, i->value_, diff, dry_run);
+        }
+    }
+    return 0;
+}
+
+int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
+{
+    if(!dest || !src)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    if(dest->len_ == src->len_)
+    {
+        if(dest->type_ == src->type_)
+        {
+            if(dest->type_ == value::data_type::integer)
+            {
+                if(dest->is_bool_ == src->is_bool_)
+                {
+                    // FIXME! valid_
+                    for(int i=0; i<dest->len_; i++)
+                    {
+                        if(dest->int_[i] != src->int_[i])
+                        {
+                            std::string path;
+                            src->get_path(path, i);
+                            if(diff)
+                            {
+                                diff->push_back(path);
+                            }
+                            jgb_debug("diff. { path = %s, dest = %ld, src = %ld }",
+                                      path.c_str(), dest->int_[i], src->int_[i]);
+                            if(!dry_run)
+                            {
+                                dest->int_[i] = src->int_[i];
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    std::string path;
+                    src->get_path(path);
+                    jgb_debug("type unmatched. { path = %s, " \
+                              "dest.type_ = %d, dest.is_bool_ = %d, " \
+                              "src.type_ = %d, src.is_bool = %d }",
+                              path.c_str(),
+                              (int) dest->type_, dest->is_bool_,
+                              (int) src->type_, src->is_bool_);
+                }
+            }
+            else if(dest->type_ == value::data_type::real)
+            {
+                // FIXME! valid_
+                for(int i=0; i<dest->len_; i++)
+                {
+                    if(!is_equal(dest->real_[i], src->real_[i]))
+                    {
+                        std::string path;
+                        src->get_path(path, i);
+                        if(diff)
+                        {
+                            diff->push_back(path);
+                        }
+                        jgb_debug("diff. { path = %s, dest = %f, src = %f }",
+                                  path.c_str(), dest->real_[i], src->real_[i]);
+                        if(!dry_run)
+                        {
+                            dest->real_[i] = src->real_[i];
+                        }
+                    }
+                }
+            }
+            else if(dest->type_ == value::data_type::string)
+            {
+                for(int i=0; i<dest->len_; i++)
+                {
+                    if(dest->str_[i] && src->str_[i])
+                    {
+                        if( (!dest->str_[i] && src->str_[i])
+                            || (dest->str_[i] && !src->str_[i])
+                            || (dest->str_[i] && src->str_[i] && strcmp(dest->str_[i], src->str_[i])))
+                        {
+                            std::string path;
+                            src->get_path(path, i);
+                            if(diff)
+                            {
+                                diff->push_back(path);
+                            }
+                            jgb_debug("diff. { path = %s, dest = %s, src = %s }",
+                                      path.c_str(), dest->str_[i], src->str_[i]);
+                            if(!dry_run)
+                            {
+                                if(dest->str_[i])
+                                {
+                                    free((void*)dest->str_[i]);
+                                    dest->str_[i] = nullptr;
+                                }
+                                if(src->str_[i])
+                                {
+                                    dest->str_[i] = strdup(src->str_[i]);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else if(dest->type_ == value::data_type::object)
+            {
+                for(int i=0; i<dest->len_; i++)
+                {
+                    update(dest->conf_[i], src->conf_[i], diff, dry_run);
+                }
+            }
+            else
+            {
+                std::string path;
+                src->get_path(path);
+                jgb_warning("ignored. { path = %s, type = %d }", path.c_str(), (int)dest->type_);
+            }
+        }
+        else if(dest->type_ == value::data_type::real && src->type_ == value::data_type::integer)
+        {
+            // FIXME! valid_
+            for(int i=0; i<dest->len_; i++)
+            {
+                if(!is_equal(dest->real_[i], src->int_[i]))
+                {
+                    std::string path;
+                    src->get_path(path, i);
+                    if(diff)
+                    {
+                        diff->push_back(path);
+                    }
+                    jgb_debug("diff. { path = %s, dest = %f, src = %ld }",
+                              path.c_str(), dest->real_[i], src->int_[i]);
+                    if(!dry_run)
+                    {
+                        dest->real_[i] = src->int_[i];
+                    }
+                }
+            }
+        }
+        else
+        {
+            std::string path;
+            src->get_path(path);
+            jgb_debug("type unmatched. { path = %s, dest.type_ = %d, src.type_ = %d }",
+                      path.c_str(), (int) dest->type_, (int) src->type_);
+        }
+    }
+    else
+    {
+        std::string path;
+        src->get_path(path);
+        jgb_debug("size unmatched. { path = %s, dest.len_ = %d, src.len_ = %d }",
+                  path.c_str(), dest->len_, src->len_);
+    }
+
+
+    return 0;
 }
 
 }

@@ -40,8 +40,6 @@ class value;
 class pair;
 class config;
 
-static const int object_len_max = 1024;
-
 class value
 {
 public:
@@ -62,8 +60,10 @@ public:
     ~value();
 
     int get(const char* path, value** val);
+
     // 返回 value 的 jpath。
-    void get_path(std::string& path);
+    // 如果 idx 取值非0且有效，则在路径末尾添加 "[$idx]"。
+    void get_path(std::string& path, int idx = 0);
 
     friend std::ostream& operator<<(std::ostream& os, const value* val);
 
@@ -98,6 +98,8 @@ public:
 
     // for jpath.
     pair* uplink_;
+
+    static const int object_len_max = 1024;
 };
 
 class pair
@@ -130,6 +132,7 @@ public:
 
     void clear();
 
+    // n 用于限定 name 的长度，以配合 jpath 使用。
     pair* find(const char* name, int n = 0);
 
     int get(const char* path, value** val);
@@ -169,6 +172,9 @@ private:
     // val 可以是一个数组，但是数组的成员不是 value 类型，所以无法选择一个成员作为 val 返回。
     int get(const char* path, value** val, int& idx);
 };
+
+int update(config* dest, config* src, std::list<std::string>* diff = nullptr, bool dry_run = false);
+int update(value* dest, value* src, std::list<std::string>* diff = nullptr, bool dry_run = false);
 
 }
 
