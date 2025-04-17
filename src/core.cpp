@@ -215,7 +215,7 @@ int task::start_multiple()
 // TODO: 线程安全。
 int task::start()
 {
-    jgb_debug("{ workers_.size() = %lu }", workers_.size());
+    //jgb_debug("{ workers_.size() = %lu }", workers_.size());
     if(workers_.size() > 0)
     {
         if(state_ == task_state_running)
@@ -224,7 +224,7 @@ int task::start()
         }
         else if(state_ == task_state_idle || state_ == task_state_aborted)
         {
-            jgb_debug("start task. { name = %s, id = %d }",
+            jgb_info("start task. { name = %s, id = %d }",
                       instance_->app_->name_.c_str(), instance_->id_);
 
             // 启动任务
