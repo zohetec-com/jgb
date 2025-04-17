@@ -575,8 +575,9 @@ static void test_update()
     jgb::config* conf = jgb::config_factory::create("test.json");
     jgb::config* conf2 = jgb::config_factory::create("update.json");
     int r;
+    std::list<std::string> changed;
 
-    update(conf, conf2);
+    update(conf, conf2, &changed);
 
     int ival;
     const char* sval;
@@ -670,6 +671,30 @@ static void test_update()
     jgb_assert(!r);
     jgb_assert(!strcmp(sval, "world"));
 
+    r = conf->get("/p7/p77", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 0);
+
+    r = conf->get("/p7/p77[1]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 0);
+
+    r = conf->get("/p7/p78/version", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 2404);
+
+    r = conf->get("/p7/p78/os", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "ubuntu"));
+
+    r = conf->get("/p7/p78[1]/version", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 1210);
+
+    r = conf->get("/p7/p78[1]/os", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "kylin"));
+
     r = conf->get("/p8[0]", rval);
     jgb_assert(!r);
     jgb_assert(jgb::is_equal(rval, 99));
@@ -727,6 +752,66 @@ static void test_update()
     r = conf->get("/p27[1]/y", &sval);
     jgb_assert(!r);
     jgb_assert(!strcmp(sval, "nono"));
+
+    jgb_debug("{ changed = %lu }", changed.size());
+    jgb_assert(changed.size() == 33);
+#if 0
+    int n = 0;
+    fprintf(stderr, "{\n");
+    for(auto i: changed)
+    {
+        if(n)
+        {
+            fprintf(stderr, ",\n");
+        }
+        fprintf(stderr, "    \"%s\"", i.c_str());
+        ++ n;
+    }
+    fprintf(stderr, "\n}");
+#endif
+    const char* expected_changed [] =
+        {
+            "/p1",
+            "/p2",
+            "/p3",
+            "/p4",
+            "/p4[1]",
+            "/p4[2]",
+            "/p5",
+            "/p5[1]",
+            "/p5[2]",
+            "/p6",
+            "/p6[1]",
+            "/p7/p71",
+            "/p7/p72",
+            "/p7/p73",
+            "/p7/p74",
+            "/p7/p74[1]",
+            "/p7/p74[2]",
+            "/p7/p75",
+            "/p7/p75[1]",
+            "/p7/p75[2]",
+            "/p7/p76",
+            "/p7/p76[1]",
+            "/p7/p77",
+            "/p7/p78/version",
+            "/p7/p78[1]/os",
+            "/p8",
+            "/p8[1]",
+            "/p11",
+            "/p12",
+            "/p14",
+            "/p14[1]",
+            "/p27/x",
+            "/p27[1]/y"
+    };
+
+    int n = 0;
+    for(auto i: changed)
+    {
+        jgb_assert(i == std::string(expected_changed[n]));
+        ++ n;
+    }
 
     delete conf;
     delete conf2;
