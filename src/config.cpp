@@ -754,8 +754,8 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
                             {
                                 diff->push_back(path);
                             }
-                            jgb_debug("diff. { path = %s, dest = %ld, src = %ld }",
-                                      path.c_str(), dest->int_[i], src->int_[i]);
+                            //jgb_debug("diff. { path = %s, dest = %ld, src = %ld }",
+                            //          path.c_str(), dest->int_[i], src->int_[i]);
                             if(!dry_run)
                             {
                                 dest->int_[i] = src->int_[i];
@@ -788,8 +788,8 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
                         {
                             diff->push_back(path);
                         }
-                        jgb_debug("diff. { path = %s, dest = %f, src = %f }",
-                                  path.c_str(), dest->real_[i], src->real_[i]);
+                        //jgb_debug("diff. { path = %s, dest = %f, src = %f }",
+                        //          path.c_str(), dest->real_[i], src->real_[i]);
                         if(!dry_run)
                         {
                             dest->real_[i] = src->real_[i];
@@ -813,8 +813,8 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
                             {
                                 diff->push_back(path);
                             }
-                            jgb_debug("diff. { path = %s, dest = %s, src = %s }",
-                                      path.c_str(), dest->str_[i], src->str_[i]);
+                            //jgb_debug("diff. { path = %s, dest = %s, src = %s }",
+                            //          path.c_str(), dest->str_[i], src->str_[i]);
                             if(!dry_run)
                             {
                                 if(dest->str_[i])
@@ -858,8 +858,8 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
                     {
                         diff->push_back(path);
                     }
-                    jgb_debug("diff. { path = %s, dest = %f, src = %ld }",
-                              path.c_str(), dest->real_[i], src->int_[i]);
+                    //jgb_debug("diff. { path = %s, dest = %f, src = %ld }",
+                    //          path.c_str(), dest->real_[i], src->int_[i]);
                     if(!dry_run)
                     {
                         dest->real_[i] = src->int_[i];

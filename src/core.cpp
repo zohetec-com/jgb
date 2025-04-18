@@ -35,7 +35,7 @@ struct core_worker
 {
     void operator()(struct worker* w)
     {
-        jgb_function();
+        //jgb_function();
 
         if(!w)
         {
