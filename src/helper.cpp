@@ -195,24 +195,4 @@ void sleep(int ms)
     boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
 }
 
-int64_t get_timestamp_ms(bool mono)
-{
-    struct timespec ts;
-    int64_t i_ts = 0L;
-    int r;
-    clockid_t clockid = mono ? CLOCK_BOOTTIME : CLOCK_REALTIME;
-
-    r = clock_gettime(clockid, &ts);
-    if(!r)
-    {
-        i_ts = ts.tv_sec * 1000 + ts.tv_nsec / 1000 / 1000;
-    }
-    else
-    {
-        jgb_fail("clock_gettime. { errno = %d }", errno);
-    }
-
-    return i_ts;
-}
-
 } // namespace jgb
