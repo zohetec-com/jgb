@@ -445,6 +445,7 @@ int config::set(const char* name, const char* sval, bool create)
             jgb::value* val = new jgb::value(jgb::value::data_type::string);
             if(sval)
             {
+                jgb_assert(!val->str_[0]);
                 val->str_[0] = strdup(sval);
             }
             // 字符串类型没有 unset 状态？

@@ -96,7 +96,11 @@ static void release(void*)
     {
         if(it->handle)
         {
+            // https://stackoverflow.com/questions/44627258/addresssanitizer-and-loading-of-dynamic-libraries-at-runtime-unknown-module
+            // 为避免 AddressSanitizer 报告 "(<unknown module>)"，不卸载动态库文件。
+#ifndef DEBUG
             dlclose(it->handle);
+#endif
         }
     }
     lib_info_list.clear();
