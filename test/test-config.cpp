@@ -43,6 +43,16 @@ static void test_datatype()
     jgb_debug("{ x = %ld}", x);
 }
 
+static void test_object_value()
+{
+    jgb::value* val = new jgb::value(jgb::value::data_type::object, 2);
+    val->conf_[0]->set("a", 1L);
+    std::ostringstream os;
+    os << val;
+    jgb_debug("%s", os.str().c_str());
+    delete val;
+}
+
 static void test_value()
 {
     jgb::value val;
@@ -864,6 +874,7 @@ int test_main(void*)
     test_set();
     test_null_conf();
     test_datatype();
+    test_object_value();
     test_value();
     test_null_value();
 

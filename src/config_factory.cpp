@@ -162,6 +162,7 @@ static jgb::value* create_array(json_t* json)
             case value::data_type::string:
                 for (i = 0; i < size; i++)
                 {
+                    jgb_assert(!val->str_[i]);
                     json_val = json_array_get(json, i);
                     val->str_[i] = strdup(json_string_value(json_val));
                     jgb_assert(val->str_[i]);
@@ -171,6 +172,8 @@ static jgb::value* create_array(json_t* json)
             case value::data_type::object:
                 for (i = 0; i < size; i++)
                 {
+                    jgb_assert(val->conf_[i]);
+                    delete val->conf_[i];
                     json_val = json_array_get(json, i);
                     val->conf_[i] = create_config(json_val);
                     val->conf_[i]->id_ = i;

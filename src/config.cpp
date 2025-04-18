@@ -37,14 +37,20 @@ value::~value()
         {
             for(int i=0; i<len_; i++)
             {
-                free((void*)str_[i]);
+                if(str_[i])
+                {
+                    free((void*)str_[i]);
+                }
             }
         }
         else if(type_ == data_type::object)
         {
             for(int i=0; i<len_; i++)
             {
-                delete conf_[i];
+                if(conf_[i])
+                {
+                    delete conf_[i];
+                }
             }
         }
         delete [] int_;
@@ -60,16 +66,6 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
         len = object_len_max;
     }
 
-    if(len > 0)
-    {
-        int_ = new int64_t[len];
-        jgb_assert(int_);
-    }
-    else
-    {
-        int_ = nullptr;
-    }
-
     type_ = type;
     len_ = len;
     if(len > 1)
@@ -82,6 +78,24 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
     }
     is_bool_ = is_bool;
     valid_ = false;
+
+    if(len_ > 0)
+    {
+        // https://www.reddit.com/r/cpp_questions/comments/mgmuuu/when_allocating_an_array_with_new_in_c_does_it/
+        int_ = new int64_t[len]{};
+        jgb_assert(int_);
+        if(type_ == data_type::object)
+        {
+            for(int i=0; i<len_; i++)
+            {
+                conf_[i] = new config;
+            }
+        }
+    }
+    else
+    {
+        int_ = nullptr;
+    }
 }
 
 int value::get(const char* path, value** val)
@@ -479,6 +493,8 @@ int config::create(const char* name, config* cval)
     {
         jgb::value* val = new jgb::value(jgb::value::data_type::object);
         cval->uplink_ = val;
+        jgb_assert(val->conf_[0]);
+        delete val->conf_[0];
         val->conf_[0] = cval;
         val->valid_ = true;
         pair_.push_back(new pair(name, val, this));
@@ -549,7 +565,7 @@ int config::get(const char* path, value** val)
     }
 
     *val = nullptr;
-    jgb_debug("not found. { s = %.*s }", (int)(e - s), s);
+    //jgb_debug("not found. { s = %.*s }", (int)(e - s), s);
     return JGB_ERR_NOT_FOUND;
 }
 
@@ -727,7 +743,7 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
             {
                 if(dest->is_bool_ == src->is_bool_)
                 {
-                    // FIXME! valid_
+                    // FIXME! valid_ 需要考虑吗？
                     for(int i=0; i<dest->len_; i++)
                     {
                         if(dest->int_[i] != src->int_[i])
@@ -866,8 +882,6 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
         jgb_debug("size unmatched. { path = %s, dest.len_ = %d, src.len_ = %d }",
                   path.c_str(), dest->len_, src->len_);
     }
-
-
     return 0;
 }
 
