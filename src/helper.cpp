@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  */
 #include "error.h"
-#include "debug.h"
+#include "log.h"
 #include "helper.h"
 #include <math.h>
 #include <stdexcept>

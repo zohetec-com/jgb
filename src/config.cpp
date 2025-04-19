@@ -23,7 +23,7 @@
  */
 #include "config.h"
 #include "error.h"
-#include "debug.h"
+#include "log.h"
 #include "helper.h"
 
 namespace jgb

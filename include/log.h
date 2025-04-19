@@ -21,12 +21,23 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#ifndef DEBUG_H_20250301
-#define DEBUG_H_20250301
+#ifndef LOG_H_20250301
+#define LOG_H_20250301
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
+
+enum jgb_log_level
+{
+    JGB_LOG_ERROR = 0,
+    JGB_LOG_WARNING,
+    JGB_LOG_NOTICE,
+    JGB_LOG_INFO,
+    JGB_LOG_DEBUG
+};
+
+void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char *format, ...);
 
 #ifdef DEBUG
 #define jgb_assert(x)           assert(x)
@@ -34,30 +45,31 @@
 #define jgb_assert(x)
 #endif
 
-#define jgb_debug(fmt, ...)     fprintf(stderr, "[%s:%d][DEBUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define jgb_info(fmt, ...)      fprintf(stderr, "[%s:%d][INFO] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define jgb_notice(fmt, ...)    fprintf(stderr, "[%s:%d][NOTICE] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define jgb_warning(fmt, ...)   fprintf(stderr, "[%s:%d][WARNING] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-#define jgb_error(fmt, ...)     fprintf(stderr, "[%s:%d][ERROR] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define jgb_debug(fmt, ...)     jgb_log(JGB_LOG_DEBUG,   __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define jgb_info(fmt, ...)      jgb_log(JGB_LOG_INFO,    __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define jgb_notice(fmt, ...)    jgb_log(JGB_LOG_NOTICE,  __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define jgb_warning(fmt, ...)   jgb_log(JGB_LOG_WARNING, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define jgb_error(fmt, ...)     jgb_log(JGB_LOG_ERROR,   __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
 // notice 特例
-#define jgb_ok(fmt, ...)        fprintf(stderr, "[%s:%d][NOTICE][OK] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define jgb_ok(fmt, ...)        jgb_notice(fmt "   [OK]", ##__VA_ARGS__)
 
 // 调试的特例
-#define jgb_function()          fprintf(stderr, "[%s:%d][DEBUG] call %s()\n", __FILE__, __LINE__, __FUNCTION__)
-#define jgb_mark()              fprintf(stderr, "[%s:%d][DEBUG]\n", __FILE__, __LINE__)
+#define jgb_function()          jgb_debug("call %s()", __FUNCTION__)
+#define jgb_mark()              jgb_debug("\n")
 
 // 错误的特例
 #define jgb_bug(fmt, ...) \
     do { \
-        fprintf(stderr, "[%s:%d][ERROR][BUG] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+        jgb_error(fmt "   [BUG]", ##__VA_ARGS__); \
         jgb_assert(0); \
        } while(0)
-#define jgb_fail(fmt, ...)      fprintf(stderr, "[%s:%d][ERROR][FAILED] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define jgb_fail(fmt, ...) \
+    jgb_error(fmt "   [FAILED]", ##__VA_ARGS__);
 #define jgb_fatal(fmt, ...) \
     do { \
-        fprintf(stderr, "[%s:%d][ERROR][FATAL] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+        jgb_error(fmt "   [FATAL]", ##__VA_ARGS__);\
         jgb_assert(0); \
        } while(0)
 
-#endif // DEBUG_H
+#endif // LOG_H

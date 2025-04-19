@@ -2,7 +2,7 @@
 #define _GNU_SOURCE
 #endif
 #include <unistd.h>
-#include "debug.h"
+#include "log.h"
 #include "app.h"
 #include "helper.h"
 

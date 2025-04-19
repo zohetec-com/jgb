@@ -863,7 +863,7 @@ static void test_invalid()
     jgb_assert(!conf);
 }
 
-int test_main(void*)
+static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
@@ -896,7 +896,7 @@ jgb_api_t test_config
 {
     .version = MAKE_API_VERSION(0, 1),
     .desc = "test config",
-    .init = test_main,
+    .init = init,
     .release = nullptr,
     .create = nullptr,
     .destroy = nullptr,

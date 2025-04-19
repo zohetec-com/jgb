@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#include "debug.h"
+#include "log.h"
 #include <unistd.h>
 #include "core.h"
 #include <signal.h>
