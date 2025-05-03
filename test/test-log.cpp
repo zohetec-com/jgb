@@ -1,4 +1,4 @@
-#include "core.h"
+#include <jgb/core.h>
 
 static int forward_to_vsnprintf(char* buf, int len, const char* format, ...)
 {

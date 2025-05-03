@@ -24,8 +24,8 @@
 #ifndef APP_H_20250331
 #define APP_H_20250331
 
-#include "config.h"
-#include "app.h"
+#include <jgb/config.h>
+#include <jgb/app.h>
 #include <vector>
 #include <list>
 #include <boost/thread.hpp>

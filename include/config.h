@@ -31,8 +31,8 @@
 #include <sstream>
 #include <stdlib.h>
 #include <string.h>
-#include "error.h"
-#include "log.h"
+#include <jgb/error.h>
+#include <jgb/log.h>
 
 namespace jgb
 {

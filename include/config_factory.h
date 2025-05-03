@@ -24,7 +24,7 @@
 #ifndef CONFIG_FACTORY_H
 #define CONFIG_FACTORY_H
 
-#include "config.h"
+#include <jgb/config.h>
 
 namespace jgb
 {

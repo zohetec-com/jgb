@@ -1,4 +1,4 @@
-#include "core.h"
+#include <jgb/core.h>
 
 static int init(void*)
 {
