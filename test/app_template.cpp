@@ -1,5 +1,5 @@
-#include "jgb/core.h"
-#include "jgb/helper.h"
+#include "core.h"
+#include "helper.h"
 
 static int init(void* conf)
 {
