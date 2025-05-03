@@ -21,9 +21,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#include "log.h"
-#include "app.h"
-#include "config.h"
+#include <jgb/log.h>
+#include <jgb/app.h>
+#include <jgb/config.h>
 #include <sys/types.h>
 
 static bool tsk_init_called = false;

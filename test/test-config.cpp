@@ -21,9 +21,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  */
-#include "helper.h"
-#include "config_factory.h"
-#include "app.h"
+#include <jgb/helper.h>
+#include <jgb/config_factory.h>
+#include <jgb/app.h>
 
 static void test_null_conf()
 {

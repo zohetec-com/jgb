@@ -2,9 +2,9 @@
 #define _GNU_SOURCE
 #endif
 #include <unistd.h>
-#include "log.h"
-#include "app.h"
-#include "helper.h"
+#include <jgb/log.h>
+#include <jgb/app.h>
+#include <jgb/helper.h>
 
 static pid_t pid;
 static int tsk_init(void*)
