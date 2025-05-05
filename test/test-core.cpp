@@ -35,7 +35,6 @@ static bool destroy_called = false;
 
 static int tsk_init(void*)
 {
-    jgb_function();
     jgb_assert(!tsk_init_called);
     jgb_assert(!tsk_loop0_count);
     jgb_assert(!tsk_loop1_count);
@@ -77,8 +76,6 @@ static int init(void* conf)
     int r;
     int ival;
 
-    jgb_function();
-
     jgb_assert(!tsk_init_called);
     jgb_assert(!tsk_loop0_count);
     jgb_assert(!tsk_loop1_count);
@@ -96,8 +93,6 @@ static void release(void* conf)
     jgb::config* c = (jgb::config*) conf;
     int r;
     int ival;
-
-    jgb_function();
 
     jgb_assert(tsk_init_called);
     jgb_assert(tsk_exit_called);

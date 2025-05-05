@@ -98,6 +98,20 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
     }
 }
 
+double value::to_real(int idx)
+{
+    if(type_ == value::data_type::real)
+    {
+        return real_[idx];
+    }
+    if(type_ == value::data_type::integer)
+    {
+        return double(int_[idx]);
+    }
+    jgb_assert(0);
+    return 0.0;
+}
+
 int value::get(const char* path, value** val)
 {
     if(!path || !val)
@@ -153,17 +167,18 @@ int value::get(const char* path, value** val)
     }
 }
 
-void value::get_path(std::string& path, int idx)
+void value::get_path(std::string& path, int idx, bool schema, bool show_idx_0)
 {
     if(uplink_)
     {
-        uplink_->get_path(path);
+        uplink_->get_path(path, schema);
     }
     else
     {
         path += "/";
     }
-    if(idx && idx < len_)
+    //jgb_debug("idx = %d, show_idx_0 = %d, final = %d", idx, show_idx_0, !schema && (idx || show_idx_0) && idx < len_);
+    if(!schema && (idx || (is_array_ && show_idx_0)) && idx < len_)
     {
         path += '[' + std::to_string(idx) + ']';
     }
@@ -184,11 +199,11 @@ pair::~pair()
     delete value_;
 }
 
-void pair::get_path(std::string& path)
+void pair::get_path(std::string& path, bool schema)
 {
     if(uplink_)
     {
-        uplink_->get_path(path);
+        uplink_->get_path(path, schema);
     }
     else
     {
@@ -691,13 +706,13 @@ std::string config::to_string()
     return oss.str();
 }
 
-void config::get_path(std::string& path)
+void config::get_path(std::string& path, bool schema)
 {
     //jgb_debug("{ uplink_ = %p }", uplink_);
     if(uplink_)
     {
         uplink_->get_path(path);
-        if(id_)
+        if(!schema && id_)
         {
             path += '[' + std::to_string(id_) + ']';
         }
@@ -884,6 +899,70 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
                   path.c_str(), dest->len_, src->len_);
     }
     return 0;
+}
+
+void find(value* v, const std::string& name, value::data_type type, void(*on_found)(value*,void*), void* arg)
+{
+    if(on_found)
+    {
+        if(v->type_ == value::data_type::object)
+        {
+            for(int i=0; i<v->len_; i++)
+            {
+                find(v->conf_[i], name, type, on_found, arg);
+            }
+        }
+    }
+}
+
+void find(config* c, const std::string& name, value::data_type type, void(*on_found)(value*,void*), void* arg)
+{
+    if(on_found)
+    {
+        for(auto i: c->pair_)
+        {
+            if(!strcmp(name.c_str(), i->name_) && i->value_->type_ == type)
+            {
+                on_found(i->value_, arg);
+            }
+            if(i->value_->type_ == value::data_type::object)
+            {
+                find(i->value_, name, type, on_found, arg);
+            }
+        }
+    }
+}
+
+void find_attr(value* v, void(*on_found)(value*,void*), void* arg)
+{
+    if(on_found)
+    {
+        if(v->type_ == value::data_type::object)
+        {
+            for(int i=0; i<v->len_; i++)
+            {
+                find_attr(v->conf_[i], on_found, arg);
+            }
+        }
+    }
+}
+
+void find_attr(config* c, void(*on_found)(value*,void*), void* arg)
+{
+    if(on_found)
+    {
+        for(auto i: c->pair_)
+        {
+            if(i->value_->type_ != value::data_type::object)
+            {
+                on_found(i->value_, arg);
+            }
+            else
+            {
+                find_attr(i->value_, on_found, arg);
+            }
+        }
+    }
 }
 
 }

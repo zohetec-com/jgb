@@ -34,7 +34,8 @@ enum jgb_log_level
     JGB_LOG_WARNING,
     JGB_LOG_NOTICE,
     JGB_LOG_INFO,
-    JGB_LOG_DEBUG
+    JGB_LOG_DEBUG,
+    JGB_LOG_RAW
 };
 
 void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char *format, ...);
@@ -71,5 +72,7 @@ void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char
         jgb_error(fmt "   [FATAL]", ##__VA_ARGS__);\
         jgb_assert(0); \
        } while(0)
+
+#define jgb_raw(fmt, ...)       jgb_log(JGB_LOG_RAW, NULL, 0, fmt, ##__VA_ARGS__)
 
 #endif // LOG_H
