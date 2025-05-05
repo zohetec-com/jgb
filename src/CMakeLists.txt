@@ -1,7 +1,14 @@
-add_library(jgb-core SHARED log.cpp config.cpp config_factory.cpp helper.cpp core.cpp module.cpp)
+add_library(jgb-core SHARED
+    log.cpp
+    config.cpp
+    schema.cpp
+    config_factory.cpp
+    helper.cpp
+    core.cpp
+    module.cpp)
 target_include_directories(jgb-core PRIVATE ../include)
 find_package(Boost COMPONENTS thread chrono filesystem REQUIRED)
-target_link_libraries(jgb-core ${Boost_THREAD_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} jansson)
+target_link_libraries(jgb-core ${Boost_THREAD_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} jansson pcre2-8)
 install(TARGETS jgb-core)
 
 add_executable(jgb main.cpp)

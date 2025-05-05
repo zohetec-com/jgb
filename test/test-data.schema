@@ -1,0 +1,36 @@
+{
+  "p1":{
+    "type":"int",
+    "range":{"min":1, "max":10},
+    "size":3
+  },
+  "p2":{
+    "type":"real",
+    "range":{"min":1.0, "max":3.0},
+    "size":2
+  },
+  "p3":{
+    "type":"int",
+    "range":[100,200,300],
+    "alias":["H264","H265","H266"]
+  },
+  "p4":[
+   {
+     "p41":{
+       "type":"int",
+       "range":{"min":4,"max":11},
+       "size":3
+     },
+     "p41":{
+       "type":"real",
+       "range":{"min":7.0,"max":13.0},
+       "size":2
+     },
+     "p41":{
+       "type":"int",
+       "range":[200,300],
+       "size":1
+     }
+   }
+  ]
+}

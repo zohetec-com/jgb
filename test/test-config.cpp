@@ -24,6 +24,7 @@
 #include <jgb/helper.h>
 #include <jgb/config_factory.h>
 #include <jgb/app.h>
+#include <jgb/schema.h>
 
 static void test_null_conf()
 {
@@ -863,11 +864,23 @@ static void test_invalid()
     jgb_assert(!conf);
 }
 
+static void test_schema()
+{
+    jgb::config* schema_conf = jgb::config_factory::create("test-data.schema");
+    jgb::config* conf = jgb::config_factory::create("test-data-1.json");
+    jgb::schema* schema = jgb::schema_factory::create(schema_conf);
+    int r;
+    jgb_assert(schema);
+    r = schema->validate(conf);
+    jgb_assert(!r);
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_schema();
     test_compare();
     test_invalid();
     test_set();

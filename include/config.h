@@ -63,7 +63,7 @@ public:
 
     // 返回 value 的 jpath。
     // 如果 idx 取值非0且有效，则在路径末尾添加 "[$idx]"。
-    void get_path(std::string& path, int idx = 0);
+    void get_path(std::string& path, int idx = 0, bool schema = false);
 
     friend std::ostream& operator<<(std::ostream& os, const value* val);
 
@@ -109,7 +109,7 @@ public:
     ~pair();
 
     // 返回 pair 的 jpath。
-    void get_path(std::string& path);
+    void get_path(std::string& path, bool schema = false);
 
     friend std::ostream& operator<<(std::ostream& os, const pair* pr);
 
@@ -128,7 +128,7 @@ public:
     ~config();
 
     // 返回 config 的 jpath。
-    void get_path(std::string& path);
+    void get_path(std::string& path, bool schema = false);
 
     void clear();
 
@@ -146,6 +146,7 @@ public:
     int set(const char* name, double rval, bool create = true);
     int set(const char* name, const char* sval, bool create = true);
     int set(const char* name, const std::string& sval, bool create = true);
+
     int create(const char* name, config* cval);
     int create(const char* name);
     int create(const char* name, value* val);
@@ -176,6 +177,13 @@ private:
 int update(config* dest, config* src, std::list<std::string>* diff = nullptr, bool dry_run = false);
 int update(value* dest, value* src, std::list<std::string>* diff = nullptr, bool dry_run = false);
 
-}
+
+void find(value* v,  const std::string& name, value::data_type type, void(*on_found)(value*,void*), void* arg = nullptr);
+void find(config* c, const std::string& name, value::data_type type, void(*on_found)(value*,void*), void* arg = nullptr);
+
+void find_attr(value* v,  void(*on_found)(value*,void*), void* arg = nullptr);
+void find_attr(config* c, void(*on_found)(value*,void*), void* arg = nullptr);
+
+} // namespace jgb
 
 #endif // CONFIG_H
