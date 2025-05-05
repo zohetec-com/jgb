@@ -335,7 +335,8 @@ static void on_found_type(value* val, void* arg)
         {
             schema* s = static_cast<schema*>(arg);
             std::string path;
-            val->get_path(path, 0 , true);
+            val->uplink_->uplink_->get_path(path, true);
+            jgb_debug("new range. { path = %s }", path.c_str());
             jgb_assert(path.length() > 0);
             s->ranges_.insert(std::pair<std::string, range*>(path, ra));
         }
@@ -406,6 +407,50 @@ int schema::validate(config* conf, struct result* res)
     else
     {
         return JGB_ERR_INVALID;
+    }
+}
+
+void schema::dump(const schema::result& res)
+{
+    jgb_raw("schema validate result:\n");
+
+    jgb_raw("error:\n");
+    if(res.error_.size())
+    {
+        for(auto i: res.error_)
+        {
+            jgb_raw("  %d %s\n", i.code, i.path.c_str());
+        }
+    }
+    else
+    {
+        jgb_raw("  none\n");
+    }
+
+    jgb_raw("ok:\n");
+    if(res.ok_.size())
+    {
+        for(auto i: res.ok_)
+        {
+            jgb_raw("  %s\n", i.c_str());
+        }
+    }
+    else
+    {
+        jgb_raw("  none\n");
+    }
+
+    jgb_raw("no schema:\n");
+    if(res.no_schema_.size())
+    {
+        for(auto i: res.no_schema_)
+        {
+            jgb_raw("  %s\n", i.c_str());
+        }
+    }
+    else
+    {
+        jgb_raw("  none\n");
     }
 }
 

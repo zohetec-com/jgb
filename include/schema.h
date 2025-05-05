@@ -89,18 +89,22 @@ public:
 class schema
 {
 public:
-    struct error
+    class error
     {
+    public:
         std::string path;
         int code;
     };
 
-    struct result
+    class result
     {
+    public:
         std::list<std::string> ok_;
         std::list<struct error> error_;
         std::list<std::string> no_schema_;
     };
+
+    static void dump(const result& res);
 
     ~schema();
 

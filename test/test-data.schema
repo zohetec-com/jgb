@@ -1,12 +1,12 @@
 {
   "p1":{
     "type":"int",
-    "range":{"min":1, "max":10},
+    "range":{"lower":1, "upper":10},
     "size":3
   },
   "p2":{
     "type":"real",
-    "range":{"min":1.0, "max":3.0},
+    "range":{"lower":1.0, "upper":3.0},
     "size":2
   },
   "p3":{
@@ -18,15 +18,15 @@
    {
      "p41":{
        "type":"int",
-       "range":{"min":4,"max":11},
+       "range":{"lower":4,"upper":11},
        "size":3
      },
-     "p41":{
+     "p42":{
        "type":"real",
-       "range":{"min":7.0,"max":13.0},
+       "range":{"lower":7.0,"upper":13.0},
        "size":2
      },
-     "p41":{
+     "p43":{
        "type":"int",
        "range":[200,300],
        "size":1

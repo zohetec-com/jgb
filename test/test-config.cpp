@@ -869,10 +869,15 @@ static void test_schema()
     jgb::config* schema_conf = jgb::config_factory::create("test-data.schema");
     jgb::config* conf = jgb::config_factory::create("test-data-1.json");
     jgb::schema* schema = jgb::schema_factory::create(schema_conf);
+    jgb::schema::result res;
     int r;
     jgb_assert(schema);
-    r = schema->validate(conf);
+    r = schema->validate(conf, &res);
+    jgb::schema::dump(res);
     jgb_assert(!r);
+    delete schema_conf;
+    delete conf;
+    delete schema;
 }
 
 static int init(void*)
