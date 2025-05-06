@@ -16,26 +16,17 @@ class range;
 class schema
 {
 public:
-    class error
+    struct result
     {
-    public:
         std::string path;
         int code;
-    };
-
-    class result
-    {
-    public:
-        std::list<std::string> ok_;
-        std::list<struct error> error_;
-        std::list<std::string> no_schema_;
     };
 
     static void dump(const result& res);
 
     ~schema();
 
-    int validate(config* conf, result* res = nullptr);
+    int validate(config* conf, std::list<result>* res = nullptr);
 
     std::map<std::string,range*> ranges_;
 };
@@ -51,7 +42,7 @@ public:
     bool is_array_;
     bool is_bool_;
 
-    virtual int validate(value* val, schema::result* res = nullptr);
+    virtual int validate(value* val, std::list<schema::result>* res = nullptr);
 };
 
 class range_enum : public range
@@ -59,7 +50,7 @@ class range_enum : public range
 public:
     range_enum(int len, bool is_array, bool is_bool, value* range_val_);
 
-    int validate(value* val, schema::result* res = nullptr) override;
+    int validate(value* val, std::list<schema::result>* res = nullptr) override;
     int validate(int ival);
 
     std::vector<int> enum_int_;
@@ -72,7 +63,7 @@ public:
     ~range_re();
 
     int validate(const char* str);
-    int validate(value* val, schema::result* res = nullptr) override;
+    int validate(value* val, std::list<schema::result>* res = nullptr) override;
 
 private:
     std::vector<pcre2_code*> res_;
@@ -83,7 +74,7 @@ class range_int : public range
 public:
     range_int(int len, bool is_array, bool is_bool, value* range_val_);
 
-    int validate(value* val, schema::result* res = nullptr) override;
+    int validate(value* val, std::list<schema::result>* res = nullptr) override;
     int validate(int ival);
 
     struct interval
@@ -101,7 +92,7 @@ class range_real : public range
 public:
     range_real(int len, bool is_array, value* range_val_);
 
-    int validate(value* val, schema::result* res = nullptr) override;
+    int validate(value* val, std::list<schema::result>* res = nullptr) override;
     int validate(double rval);
 
     struct interval

@@ -869,7 +869,7 @@ static void test_schema()
     jgb::config* schema_conf = jgb::config_factory::create("test-data.schema");
     jgb::config* conf = jgb::config_factory::create("test-data-1.json");
     jgb::schema* schema = jgb::schema_factory::create(schema_conf);
-    jgb::schema::result res;
+    std::list<jgb::schema::result> res;
     int r;
     jgb_assert(schema);
     r = schema->validate(conf, &res);
@@ -885,7 +885,7 @@ static void test_schema_2()
     jgb::config* schema_conf = jgb::config_factory::create("test-data.schema");
     jgb::config* conf = jgb::config_factory::create("test-data-2.json");
     jgb::schema* schema = jgb::schema_factory::create(schema_conf);
-    jgb::schema::result res;
+    std::list<jgb::schema::result> res;
     int r;
     jgb_assert(schema);
     r = schema->validate(conf, &res);

@@ -15,7 +15,7 @@ range::~range()
 {
 }
 
-static void put_result(value* val, int idx, schema::result *res, int code)
+static void put_result(value* val, int idx, std::list<schema::result>* res, int code)
 {
     jgb_assert(val);
     //jgb_debug("res = %p", res);
@@ -23,18 +23,11 @@ static void put_result(value* val, int idx, schema::result *res, int code)
     {
         std::string path;
         val->get_path(path, idx, false, true);
-        if(!code)
-        {
-            res->ok_.push_back(path);
-        }
-        else
-        {
-            res->error_.push_back({path, code});
-        }
+        res->push_back({path, code});
     }
 }
 
-int range::validate(value* val, schema::result* res)
+int range::validate(value* val, std::list<schema::result>* res)
 {
     if(!val)
     {
@@ -82,7 +75,7 @@ int range_enum::validate(int ival)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_enum::validate(value* val, schema::result* res)
+int range_enum::validate(value* val, std::list<schema::result>* res)
 {
     int r;
     r = range::validate(val);
@@ -171,7 +164,7 @@ int range_int::validate(int ival)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_int::validate(value* val, schema::result* res)
+int range_int::validate(value* val, std::list<schema::result>* res)
 {
     int r;
     r = range::validate(val);
@@ -260,7 +253,7 @@ int range_real::validate(double rval)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_real::validate(value* val, schema::result* res)
+int range_real::validate(value* val, std::list<schema::result>* res)
 {
     int r;
     r = range::validate(val);
@@ -347,7 +340,7 @@ int range_re::validate(const char* str)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_re::validate(value* val, schema::result* res)
+int range_re::validate(value* val, std::list<schema::result>* res)
 {
     int r;
     r = range::validate(val);
@@ -410,7 +403,7 @@ schema::~schema()
 
 struct validate_context
 {
-    struct schema::result* res_;
+    struct std::list<schema::result>* res_;
     schema* s_;
 };
 
@@ -432,16 +425,16 @@ static void to_validate(value* val, void* arg)
     {
         std::string conf_path;
         val->get_path(conf_path);
-        ctx->res_->no_schema_.push_back(conf_path);
+        ctx->res_->push_back({conf_path, JGB_ERR_SCHEMA_NOT_FOUND});
     }
 }
 
-int schema::validate(config* conf, result* res)
+int schema::validate(config* conf, std::list<schema::result>* res)
 {
     if(conf)
     {
         struct validate_context ctx;
-        schema::result x_res;
+        std::list<schema::result> x_res;
         ctx.s_ = this;
         ctx.res_ = res ? res : &x_res;
         find_attr(conf, to_validate, &ctx);
@@ -453,48 +446,29 @@ int schema::validate(config* conf, result* res)
     }
 }
 
-void schema::dump(const schema::result& res)
+void schema::dump(const std::list<schema::result>& res)
 {
+    int error = 0;
+    int ok = 0;
+    int no_schema = 0;
     jgb_raw("schema validate result:\n");
-
-    jgb_raw("error:\n");
-    if(res.error_.size())
+    for(auto i: res)
     {
-        for(auto i: res.error_)
+        jgb_raw("  %d %s\n", i.code, i.path.c_str());
+        if(!i.code)
         {
-            jgb_raw("  %d %s\n", i.code, i.path.c_str());
+            ++ ok;
+        }
+        else if(i.code == JGB_ERR_SCHEMA_NOT_FOUND)
+        {
+            ++ no_schema;
+        }
+        else
+        {
+            ++ error;
         }
     }
-    else
-    {
-        jgb_raw("  none\n");
-    }
-
-    jgb_raw("ok:\n");
-    if(res.ok_.size())
-    {
-        for(auto i: res.ok_)
-        {
-            jgb_raw("  %s\n", i.c_str());
-        }
-    }
-    else
-    {
-        jgb_raw("  none\n");
-    }
-
-    jgb_raw("no schema:\n");
-    if(res.no_schema_.size())
-    {
-        for(auto i: res.no_schema_)
-        {
-            jgb_raw("  %s\n", i.c_str());
-        }
-    }
-    else
-    {
-        jgb_raw("  none\n");
-    }
+    jgb_raw("total = %d, ok = %d, error = %d, no_schema = %d\n", res.size(), ok, error, no_schema);
 }
 
 schema* schema_factory::create(config* c)
