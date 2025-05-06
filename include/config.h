@@ -63,7 +63,8 @@ public:
 
     // 返回 value 的 jpath。
     // 如果 idx 取值非0且有效，则在路径末尾添加 "[$idx]"。
-    void get_path(std::string& path, int idx = 0, bool schema = false);
+    // show_idx_0 为 true 时，如果 value 为数组，即使 idx=0，仍在路径末尾添加 "[0]"。适用于报告参数检查结果场景。
+    void get_path(std::string& path, int idx = 0, bool schema = false, bool show_idx_0 = false);
 
     friend std::ostream& operator<<(std::ostream& os, const value* val);
 

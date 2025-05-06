@@ -153,7 +153,7 @@ int value::get(const char* path, value** val)
     }
 }
 
-void value::get_path(std::string& path, int idx, bool schema)
+void value::get_path(std::string& path, int idx, bool schema, bool show_idx_0)
 {
     if(uplink_)
     {
@@ -163,7 +163,8 @@ void value::get_path(std::string& path, int idx, bool schema)
     {
         path += "/";
     }
-    if(!schema && idx && idx < len_)
+    //jgb_debug("idx = %d, show_idx_0 = %d, final = %d", idx, show_idx_0, !schema && (idx || show_idx_0) && idx < len_);
+    if(!schema && (idx || (is_array_ && show_idx_0)) && idx < len_)
     {
         path += '[' + std::to_string(idx) + ']';
     }

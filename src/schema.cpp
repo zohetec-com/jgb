@@ -15,7 +15,26 @@ range::~range()
 {
 }
 
-int range::validate(value* val)
+static void put_result(value* val, int idx, schema::result *res, int code)
+{
+    jgb_assert(val);
+    //jgb_debug("res = %p", res);
+    if(res)
+    {
+        std::string path;
+        val->get_path(path, idx, false, true);
+        if(!code)
+        {
+            res->ok_.push_back(path);
+        }
+        else
+        {
+            res->error_.push_back({path, code});
+        }
+    }
+}
+
+int range::validate(value* val, schema::result* res)
 {
     if(!val)
     {
@@ -24,11 +43,13 @@ int range::validate(value* val)
 
     if(val->type_ != type_)
     {
+        put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_TYPE);
         return JGB_ERR_SCHEMA_NOT_MATCHED_TYPE;
     }
 
     if(val->len_ != len_)
     {
+        put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH);
         return JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH;
     }
 
@@ -54,28 +75,35 @@ int range_enum::validate(int ival)
     {
         if(ival == enum_int_[i])
         {
+            jgb_debug("valid int. { ival = %ld }", ival);
             return 0;
         }
     }
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_enum::validate(value* val)
+int range_enum::validate(value* val, schema::result* res)
 {
     int r;
     r = range::validate(val);
     if(!r)
     {
+        int err_count = 0;
         for(int i=0; i<val->len_; i++)
         {
             r = validate(val->int_[i]);
-            if(!r)
+            put_result(val, i, res, r);
+            if(r)
             {
-                break;
+                ++ err_count;
             }
         }
+        return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
     }
-    return r;
+    else
+    {
+        return r;
+    }
 }
 
 range_int::range_int(int len, bool is_array, bool is_bool, value* range_val_)
@@ -121,6 +149,7 @@ int range_int::validate(int ival)
         {
             if(ival >= intervals_[i].lower && ival <= intervals_[i].upper)
             {
+                jgb_debug("valid int. { ival = %ld, lower = %ld, upper = %ld }", ival, intervals_[i].lower, intervals_[i].upper);
                 return 0;
             }
         }
@@ -142,22 +171,28 @@ int range_int::validate(int ival)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_int::validate(value* val)
+int range_int::validate(value* val, schema::result* res)
 {
     int r;
     r = range::validate(val);
     if(!r)
     {
+        int err_count = 0;
         for(int i=0; i<val->len_; i++)
         {
             r = validate(val->int_[i]);
-            if(!r)
+            put_result(val, i, res, r);
+            if(r)
             {
-                break;
+                ++ err_count;
             }
         }
+        return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
     }
-    return r;
+    else
+    {
+        return r;
+    }
 }
 
 range_real::range_real(int len, bool is_array, value* range_val_)
@@ -203,6 +238,7 @@ int range_real::validate(double rval)
         {
             if(rval > intervals_[i].lower && rval < intervals_[i].upper)
             {
+                jgb_debug("valid real. { rval = %f, lower = %f, upper = %f }", rval, intervals_[i].lower, intervals_[i].upper);
                 return 0;
             }
         }
@@ -224,22 +260,30 @@ int range_real::validate(double rval)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_real::validate(value* val)
+int range_real::validate(value* val, schema::result* res)
 {
     int r;
     r = range::validate(val);
     if(!r)
     {
+        int err_count = 0;
         for(int i=0; i<val->len_; i++)
         {
+            //jgb_debug("%d: %f", i, val->real_[i]);
             r = validate(val->real_[i]);
-            if(!r)
+            //jgb_debug("r = %d", r);
+            put_result(val, i, res, r);
+            if(r)
             {
-                break;
+                ++ err_count;
             }
         }
+        return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
     }
-    return r;
+    else
+    {
+        return r;
+    }
 }
 
 range_re::range_re(int len, bool is_array, value* range_val_)
@@ -303,22 +347,28 @@ int range_re::validate(const char* str)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_re::validate(value* val)
+int range_re::validate(value* val, schema::result* res)
 {
     int r;
     r = range::validate(val);
     if(!r)
     {
+        int err_count = 0;
         for(int i=0; i<val->len_; i++)
         {
             r = validate(val->str_[i]);
-            if(!r)
+            put_result(val, i, res, r);
+            if(r)
             {
-                break;
+                ++ err_count;
             }
         }
+        return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
     }
-    return r;
+    else
+    {
+        return r;
+    }
 }
 
 static void on_found_type(value* val, void* arg)
@@ -366,39 +416,32 @@ struct validate_context
 
 static void to_validate(value* val, void* arg)
 {
-    std::string path;
+    std::string schema_path;
     struct validate_context* ctx = (struct validate_context*) arg;
     jgb_assert(ctx);
     jgb_assert(ctx->res_);
     jgb_assert(ctx->s_);
-    val->get_path(path, 0, true);
-    auto i = ctx->s_->ranges_.find(path);
+    val->get_path(schema_path, 0, true);
+    auto i = ctx->s_->ranges_.find(schema_path);
     if(i != ctx->s_->ranges_.end())
     {
         jgb_assert(i->second);
-        int r = i->second->validate(val);
-        if(!r)
-        {
-            ctx->res_->ok_.push_back(path);
-        }
-        else
-        {
-            struct schema::error err = { path, r };
-            ctx->res_->error_.push_back(err);
-        }
+        i->second->validate(val, ctx->res_);
     }
     else
     {
-        ctx->res_->no_schema_.push_back(path);
+        std::string conf_path;
+        val->get_path(conf_path);
+        ctx->res_->no_schema_.push_back(conf_path);
     }
 }
 
-int schema::validate(config* conf, struct result* res)
+int schema::validate(config* conf, result* res)
 {
     if(conf)
     {
         struct validate_context ctx;
-        struct schema::result x_res;
+        schema::result x_res;
         ctx.s_ = this;
         ctx.res_ = res ? res : &x_res;
         find_attr(conf, to_validate, &ctx);
@@ -501,12 +544,12 @@ range* range_factory::create(config* c)
         value::data_type type = get_type(s);
         if(type != value::data_type::none)
         {
-            int len = 1;
+            int size = 1;
             int is_bool = 0;
             int is_array;
-            c->get("len", len);
+            c->get("size", size);
             c->get("is_bool", is_bool);
-            if(len < 2)
+            if(size < 2)
             {
                 is_array = 0;
                 c->get("is_array", is_array);
@@ -526,7 +569,7 @@ range* range_factory::create(config* c)
                         && val->len_ > 0)
                     {
                         // enum 枚举型。
-                        range* ra = new range_enum(len, is_array, is_bool, val);
+                        range* ra = new range_enum(size, is_array, is_bool, val);
                         return ra;
                     }
                     else if(val->type_ == value::data_type::object
@@ -536,19 +579,19 @@ range* range_factory::create(config* c)
                         if(type == value::data_type::integer)
                         {
                             // int 型范围型。
-                            range* ra = new range_int(len, is_array, is_bool, val);
+                            range* ra = new range_int(size, is_array, is_bool, val);
                             return ra;
                         }
                         else if(type == value::data_type::real)
                         {
                             // real 型范围型。
-                            range* ra = new range_real(len, is_array, val);
+                            range* ra = new range_real(size, is_array, val);
                             return ra;
                         }
                         else if(type == value::data_type::string)
                         {
                             // re - 字符串型正则表达式。
-                            range* ra = new range_re(len, is_array, val);
+                            range* ra = new range_re(size, is_array, val);
                             return ra;
                         }
                     }
@@ -560,7 +603,7 @@ range* range_factory::create(config* c)
             }
             else
             {
-                range* ra = new range(type, len, is_array, is_bool);
+                range* ra = new range(type, size, is_array, is_bool);
                 return ra;
             }
         }

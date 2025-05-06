@@ -880,11 +880,28 @@ static void test_schema()
     delete schema;
 }
 
+static void test_schema_2()
+{
+    jgb::config* schema_conf = jgb::config_factory::create("test-data.schema");
+    jgb::config* conf = jgb::config_factory::create("test-data-2.json");
+    jgb::schema* schema = jgb::schema_factory::create(schema_conf);
+    jgb::schema::result res;
+    int r;
+    jgb_assert(schema);
+    r = schema->validate(conf, &res);
+    jgb::schema::dump(res);
+    jgb_assert(r);
+    delete schema_conf;
+    delete conf;
+    delete schema;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_schema_2();
     test_schema();
     test_compare();
     test_invalid();
