@@ -28,7 +28,6 @@
 #include <jgb/app.h>
 #include <vector>
 #include <list>
-#include <boost/thread.hpp>
 
 namespace jgb
 {
@@ -59,7 +58,10 @@ public:
     bool run_;
     bool exited_;  // 线程是否已结束循环。
     bool normal_; // 线程的结束状态：true-正常; false-异常
-    boost::thread* thread_;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> pimpl_;
 };
 
 class task

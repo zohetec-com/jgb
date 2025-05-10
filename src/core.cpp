@@ -27,6 +27,7 @@
 #include "helper.h"
 #include <string>
 #include <dlfcn.h>
+#include <boost/thread.hpp>
 
 namespace jgb
 {
@@ -95,25 +96,30 @@ struct core_worker
     }
 };
 
+struct worker::Impl
+{
+    boost::thread* thread_;
+};
+
 worker::worker(int id, task* task)
     : id_(id),
       task_(task),
       run_(false),
       exited_(false),
       normal_(false),
-      thread_(nullptr)
+      pimpl_(new Impl())
 {
 }
 
 int worker::start()
 {
-    if(!thread_)
+    if(!pimpl_->thread_)
     {
         struct core_worker cw;
         run_ = true;
         exited_ = false;
         normal_ = true;
-        thread_ = new boost::thread(cw, this);
+        pimpl_->thread_ = new boost::thread(cw, this);
         return 0;
     }
     else
@@ -125,25 +131,25 @@ int worker::start()
 
 int worker::stop()
 {
-    if(thread_)
+    if(pimpl_->thread_)
     {
         run_ = false;
         jgb_debug("join thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
-        thread_->join();
+        pimpl_->thread_->join();
         jgb_debug("join thread done. { id = %d }", id_);
-        delete thread_;
-        thread_ = nullptr;
+        delete pimpl_->thread_;
+        pimpl_->thread_ = nullptr;
     }
     return 0;
 }
 
 std::string worker::get_thread_id()
 {
-    if(thread_)
+    if(pimpl_->thread_)
     {
         // https://stackoverflow.com/questions/61203655/how-to-printf-stdthis-threadget-id-in-c
         std::ostringstream oss;
-        oss << thread_->get_id();
+        oss << pimpl_->thread_->get_id();
         return oss.str();
     }
     else
