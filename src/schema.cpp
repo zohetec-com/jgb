@@ -1,5 +1,7 @@
 #include "schema.h"
 #include "helper.h"
+#define PCRE2_CODE_UNIT_WIDTH 8
+#include <pcre2.h>
 
 namespace jgb
 {
@@ -364,13 +366,20 @@ int range_real::validate(value* val, schema::result* res)
     }
 }
 
-range_re::range_re(int len, bool is_array, value* range_val_)
-    : range(value::data_type::string, len, is_array, false)
+struct range_re::Impl
 {
+    std::vector<pcre2_code*> re_vec_;
+};
+
+range_re::range_re(int len, bool is_array, value* range_val_)
+    : range(value::data_type::string, len, is_array, false),
+      pimpl_(new Impl())
+{
+    jgb_function();
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::object);
     jgb_assert(range_val_->len_ > 0);
-    res_.resize(range_val_->len_);
+    pimpl_->re_vec_.resize(range_val_->len_);
     int count = 0;
     for(int i = 0; i < range_val_->len_; i++)
     {
@@ -385,8 +394,8 @@ range_re::range_re(int len, bool is_array, value* range_val_)
             int errornumber;
             PCRE2_SIZE erroroffset;
 
-            res_[count] = pcre2_compile((PCRE2_SPTR8) sval, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, nullptr);
-            if (res_[count])
+            pimpl_->re_vec_[count] = pcre2_compile((PCRE2_SPTR8) sval, PCRE2_ZERO_TERMINATED, 0, &errornumber, &erroroffset, nullptr);
+            if (pimpl_->re_vec_[count])
             {
                 ++ count;
             }
@@ -400,23 +409,29 @@ range_re::range_re(int len, bool is_array, value* range_val_)
             }
         }
     }
-    res_.resize(count);
+    pimpl_->re_vec_.resize(count);
+    jgb_debug("{ size = %lu }", pimpl_->re_vec_.size());
 }
 
 range_re::~range_re()
 {
-    for(auto i: res_)
+    for(auto i: pimpl_->re_vec_)
     {
         pcre2_code_free(i);
     }
-    res_.clear();
+    pimpl_->re_vec_.clear();
 }
 
 int range_re::validate(const char* str)
 {
-    for(auto i: res_)
+    jgb_function();
+    for(auto i: pimpl_->re_vec_)
     {
-        int r = pcre2_match(i, (PCRE2_SPTR)str, strlen(str), 0, 0, nullptr, nullptr);
+        pcre2_match_data *match_data;
+        match_data = pcre2_match_data_create_from_pattern(i, NULL);
+        int r = pcre2_match(i, (PCRE2_SPTR)str, strlen(str), 0, 0, match_data, nullptr);
+        jgb_debug("{ pattern %p, r = %d str = %.*s }", i, r, strlen(str), str);
+        pcre2_match_data_free(match_data);
         if(r >= 0)
         {
             return 0;

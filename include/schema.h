@@ -6,8 +6,6 @@
 #include <map>
 #include <vector>
 #include <jgb/config.h>
-#define PCRE2_CODE_UNIT_WIDTH 8
-#include <pcre2.h>
 
 namespace jgb
 {
@@ -76,7 +74,8 @@ public:
     int validate(value* val, schema::result* res = nullptr) override;
 
 private:
-    std::vector<pcre2_code*> res_;
+    class Impl;
+    std::unique_ptr<Impl> pimpl_;
 };
 
 class range_int : public range

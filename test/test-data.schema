@@ -55,6 +55,10 @@
        "type":"real",
        "range":{"upper":13.0},
        "size":2
+     },
+     "p49":{
+       "type":"string",
+       "range":{"re":"^abc$"}
      }
    }
   ]
