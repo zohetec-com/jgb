@@ -368,7 +368,13 @@ pair* config::find(const char* name, int n)
     return nullptr;
 }
 
-int config::set(const char* name, int64_t ival, bool create, bool is_bool)
+int config::set(const char* name, int ival, bool create, bool is_bool)
+{
+    int64_t lval = ival;
+    return set(name, lval, create, is_bool);
+}
+
+int config::set(const char* name, int64_t lval, bool create, bool is_bool)
 {
     if(!name)
     {
@@ -381,7 +387,7 @@ int config::set(const char* name, int64_t ival, bool create, bool is_bool)
         if(create)
         {
             jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, is_bool);
-            val->int_[0] = ival;
+            val->int_[0] = lval;
             val->valid_ = true;
             pair_.push_back(new pair(name, val, this));
             val->uplink_ = pair_.back();
@@ -392,13 +398,13 @@ int config::set(const char* name, int64_t ival, bool create, bool is_bool)
 
     if(pr->value_->type_ == jgb::value::data_type::integer)
     {
-        pr->value_->int_[0] = ival;
+        pr->value_->int_[0] = lval;
         pr->value_->valid_ = true;
         return 0;
     }
     else if(pr->value_->type_ == jgb::value::data_type::real)
     {
-        pr->value_->real_[0] = ival;
+        pr->value_->real_[0] = lval;
         pr->value_->valid_ = true;
         return 0;
     }
@@ -556,6 +562,25 @@ int config::create(const char* name, value* val)
     return JGB_ERR_IGNORED;
 }
 
+int config::remove(const char* name)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+
+    for(std::list<pair*>::iterator it = pair_.begin(); it != pair_.end(); ++it)
+    {
+        if(!strcmp((*it)->name_, name))
+        {
+            delete (*it);
+            pair_.erase(it);
+            break;
+        }
+    }
+    return JGB_ERR_IGNORED;
+}
+
 int config::get(const char* path, value** val)
 {
     if(!path || !val)
@@ -642,6 +667,14 @@ int config::get(const char* path, int64_t& lval)
         }
     }
     return JGB_ERR_FAIL;
+}
+
+int64_t config::int64(const char* path)
+{
+    int64_t lval = 0L;
+    int r = get(path, lval);
+    jgb_assert(!r);
+    return lval;
 }
 
 int config::get(const char* path, double& rval)

@@ -57,6 +57,8 @@ public:
           bool is_array = false,
           bool is_bool = false,
           pair* uplink = nullptr);
+    value(const value& other) = delete;
+    value& operator=(const value&) = delete;
     ~value();
 
     double to_real(int idx = 0);
@@ -109,6 +111,8 @@ class pair
 {
 public:
     pair(const char* name, value* value, config* uplink);
+    pair(const pair& other) = delete;
+    pair& operator=(const pair&) = delete;
     ~pair();
 
     // 返回 pair 的 jpath。
@@ -128,6 +132,9 @@ class config
 {
 public:
     config(value* uplink = nullptr, int id = 0);
+    config(const config& other) = delete;
+    config& operator=(const config&) = delete;
+
     ~config();
 
     // 返回 config 的 jpath。
@@ -138,6 +145,8 @@ public:
     // n 用于限定 name 的长度，以配合 jpath 使用。
     pair* find(const char* name, int n = 0);
 
+    int64_t int64(const char* path);
+
     int get(const char* path, value** val);
     int get(const char* path, int& ival);
     int get(const char* path, int64_t& lval);
@@ -146,7 +155,8 @@ public:
     int get(const char* path, std::string& sval);
     int get(const char* path, config** cval);
 
-    int set(const char* name, int64_t ival, bool create = true, bool is_bool = false);
+    int set(const char* name, int ival, bool create = true, bool is_bool = false);
+    int set(const char* name, int64_t lval, bool create = true, bool is_bool = false);
     int set(const char* name, double rval, bool create = true);
     int set(const char* name, const char* sval, bool create = true);
     int set(const char* name, const std::string& sval, bool create = true);
@@ -154,6 +164,8 @@ public:
     int create(const char* name, config* cval);
     int create(const char* name);
     int create(const char* name, value* val);
+
+    int remove(const char* name);
 
     friend std::ostream& operator<<(std::ostream& os, const config* conf);
 
