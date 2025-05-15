@@ -172,6 +172,7 @@ public:
     std::string to_string();
 
 public:
+    // 不使用 map，因为输出文本需要匹配原始输入文本顺序。
     std::list<pair*> pair_;
 
     // for jpath.
