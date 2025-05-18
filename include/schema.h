@@ -63,11 +63,29 @@ public:
 class range
 {
 public:
-    range(value::data_type type, int len, bool is_array, bool is_bool);
+    struct part
+    {
+        bool has;
+        bool inbound;
+        union upper
+        {
+            int64_t int64;
+            double real;
+        };
+    };
+
+    struct interval
+    {
+        struct part lower;
+        struct part upper;
+    };
+
+    range(value::data_type type, int len, bool is_required, bool is_array, bool is_bool);
     virtual ~range();
 
     value::data_type type_;
     int len_;
+    bool is_required_;
     bool is_array_;
     bool is_bool_;
 
@@ -77,7 +95,7 @@ public:
 class range_enum : public range
 {
 public:
-    range_enum(int len, bool is_array, bool is_bool, value* range_val_);
+    range_enum(int len, bool is_required, bool is_array, bool is_bool, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(int ival);
@@ -90,7 +108,7 @@ public:
 class range_re : public range
 {
 public:
-    range_re(int len, bool is_array, value* range_val_);
+    range_re(int len, bool is_required, bool is_array, value* range_val_);
     ~range_re();
 
     int validate(const char* str);
@@ -104,25 +122,18 @@ private:
 class range_int : public range
 {
 public:
-    range_int(int len, bool is_array, bool is_bool, value* range_val_);
+    range_int(int len, bool is_required, bool is_array, bool is_bool, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(int ival);
 
-    struct interval
-    {
-        bool has_upper;
-        bool has_lower;
-        int upper;
-        int lower;
-    };
     std::vector<struct interval> intervals_;
 };
 
 class range_real : public range
 {
 public:
-    range_real(int len, bool is_array, value* range_val_);
+    range_real(int len, bool is_required, bool is_array, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(double rval);

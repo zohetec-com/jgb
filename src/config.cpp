@@ -167,18 +167,18 @@ int value::get(const char* path, value** val)
     }
 }
 
-void value::get_path(std::string& path, int idx, bool schema, bool show_idx_0)
+void value::get_path(std::string& path, int idx, bool show_idx_0)
 {
     if(uplink_)
     {
-        uplink_->get_path(path, schema);
+        uplink_->get_path(path);
     }
     else
     {
         path += "/";
     }
     //jgb_debug("idx = %d, show_idx_0 = %d, final = %d", idx, show_idx_0, !schema && (idx || show_idx_0) && idx < len_);
-    if(!schema && (idx || (is_array_ && show_idx_0)) && idx < len_)
+    if((idx || (is_array_ && show_idx_0)) && idx < len_)
     {
         path += '[' + std::to_string(idx) + ']';
     }
@@ -199,11 +199,11 @@ pair::~pair()
     delete value_;
 }
 
-void pair::get_path(std::string& path, bool schema)
+void pair::get_path(std::string& path)
 {
     if(uplink_)
     {
-        uplink_->get_path(path, schema);
+        uplink_->get_path(path);
     }
     else
     {
@@ -342,7 +342,7 @@ void config::clear()
     pair_.clear();
 }
 
-pair* config::find(const char* name, int n)
+pair* config::find(const char* name, int n) const
 {
     //jgb_debug("find. { name = %.*s }", n, name);
     if(name)
@@ -760,13 +760,13 @@ std::string config::to_string()
     return oss.str();
 }
 
-void config::get_path(std::string& path, bool schema)
+void config::get_path(std::string& path)
 {
     //jgb_debug("{ uplink_ = %p }", uplink_);
     if(uplink_)
     {
         uplink_->get_path(path);
-        if(!schema && id_)
+        if(id_)
         {
             path += '[' + std::to_string(id_) + ']';
         }
@@ -982,38 +982,6 @@ void find(config* c, const std::string& name, value::data_type type, void(*on_fo
             if(i->value_->type_ == value::data_type::object)
             {
                 find(i->value_, name, type, on_found, arg);
-            }
-        }
-    }
-}
-
-void find_attr(value* v, void(*on_found)(value*,void*), void* arg)
-{
-    if(on_found)
-    {
-        if(v->type_ == value::data_type::object)
-        {
-            for(int i=0; i<v->len_; i++)
-            {
-                find_attr(v->conf_[i], on_found, arg);
-            }
-        }
-    }
-}
-
-void find_attr(config* c, void(*on_found)(value*,void*), void* arg)
-{
-    if(on_found)
-    {
-        for(auto i: c->pair_)
-        {
-            if(i->value_->type_ != value::data_type::object)
-            {
-                on_found(i->value_, arg);
-            }
-            else
-            {
-                find_attr(i->value_, on_found, arg);
             }
         }
     }

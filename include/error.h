@@ -39,7 +39,8 @@ enum jgb_error
     JGB_ERR_SCHEMA_NOT_MATCHED = 1100, // 所提供的参数格式与 SCHEMA 规定的不匹配
     JGB_ERR_SCHEMA_NOT_MATCHED_TYPE = 1101, // 所提供的参数的数据类型与 SCHEMA 规定的数据类型不匹配
     JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH = 1102, // 所提供的参数的长度与 SCHEMA 规定的长度不匹配
-    JGB_ERR_SCHEMA_NOT_MATCHED_RANGE = 1103 // 所提供的参数的取值与 SCHEMA 规定的取值范围不匹配
+    JGB_ERR_SCHEMA_NOT_MATCHED_RANGE = 1103, // 所提供的参数的取值与 SCHEMA 规定的取值范围不匹配
+    JGB_ERR_SCHEMA_NOT_PRESENT = 1104        // 未提供 SCHEMA 所要求提供的参数
 };
 
 #endif // ERROR_H

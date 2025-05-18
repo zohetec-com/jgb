@@ -162,7 +162,7 @@ bool is_equal(double a, double b, double epsilon)
     return fabs(a - b) < epsilon;
 }
 
-int stoi(const std::string &str, int& v)
+int stoi(const std::string& str, int& v)
 {
     std::size_t pos{};
     bool fail = false;
@@ -170,6 +170,62 @@ int stoi(const std::string &str, int& v)
     try
     {
         v = std::stoi(str, &pos, 0);
+    }
+    catch (...)
+    {
+        jgb_mark();
+        fail = true;
+    }
+
+    if(!fail)
+    {
+        if(str[pos] == '\0')
+        {
+            return 0;
+        }
+        jgb_debug("{ pos = %lu }", pos);
+    }
+
+    jgb_debug("{ str = %s}", str.c_str());
+    return JGB_ERR_INVALID;
+}
+
+int stoll(const std::string& str, int64_t& v)
+{
+    std::size_t pos{};
+    bool fail = false;
+
+    try
+    {
+        v = std::stoll(str, &pos, 0);
+    }
+    catch (...)
+    {
+        jgb_mark();
+        fail = true;
+    }
+
+    if(!fail)
+    {
+        if(str[pos] == '\0')
+        {
+            return 0;
+        }
+        jgb_debug("{ pos = %lu }", pos);
+    }
+
+    jgb_debug("{ str = %s}", str.c_str());
+    return JGB_ERR_INVALID;
+}
+
+int stod(const std::string& str, double& v)
+{
+    std::size_t pos{};
+    bool fail = false;
+
+    try
+    {
+        v = std::stod(str, &pos);
     }
     catch (...)
     {
