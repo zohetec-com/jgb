@@ -213,15 +213,16 @@ static int get_part_value(const char* s, const char* e, jgb::value::data_type ty
     }
     if(s < e)
     {
+        jgb_debug("{ s = %.*s }", e - s, s);
         int r;
         if(type == jgb::value::data_type::integer)
         {
-            r = jgb::stoll(s, part.int64);
+            r = jgb::stoll(std::string(s, e - s), part.int64);
         }
         else
         {
             jgb_assert(type == jgb::value::data_type::real);
-            r = jgb::stod(s, part.real);
+            r = jgb::stod(std::string(s, e - s), part.real);
         }
         return r;
     }
@@ -232,18 +233,19 @@ static int get_lower_part(const char* p0, const char* p1, jgb::value::data_type 
 {
     int r;
     r = get_part_value(p0 + 1, p1, type, interval.lower);
+    jgb_debug("{ r = %d }", r);
     if(!r)
     {
         if(*p0 == '[')
         {
-            interval.lower_inbound = true;
+            interval.lower.inbound = true;
         }
         else
         {
             jgb_assert(*p0 == '(');
-            interval.lower_inbound = false;
+            interval.lower.inbound = false;
         }
-        interval.has_lower = true;
+        interval.lower.has = true;
     }
     return r;
 }
@@ -256,27 +258,25 @@ static int get_upper_part(const char* p1, const char* p2, jgb::value::data_type 
     {
         if(*p2 == ']')
         {
-            interval.upper_inbound = true;
+            interval.upper.inbound = true;
         }
         else
         {
             jgb_assert(*p2 == ')');
-            interval.upper_inbound = false;
+            interval.upper.inbound = false;
         }
-        interval.has_upper = true;
+        interval.upper.has = true;
     }
     return r;
 }
 
-static int scan_one_interval(const char* s, const char** e, jgb::value::data_type type, jgb::range::interval &interval)
+static int scan_one_interval(const char* str, jgb::value::data_type type, jgb::range::interval &interval)
 {
-    jgb_assert(s);
-    jgb_assert(e);
-
-    interval = {0};
+    jgb_assert(str);
+    interval = {};
 
     // 扫描区间的开始。
-    const char* p0 = s;
+    const char* p0 = str;
     while(*p0 != '\0' && *p0 != '[' && *p0 != '(')
     {
         ++ p0;
@@ -317,8 +317,15 @@ static int scan_one_interval(const char* s, const char** e, jgb::value::data_typ
                 r2 = get_upper_part(p1, p2, type, interval);
                 if(!r1 || !r2)
                 {
-                    *e = p2;
-                    return 0;
+                    ++ p2;
+                    while(*p2 == ' ')
+                    {
+                        ++ p2;
+                    }
+                    if(*p2 == '\0')
+                    {
+                        return 0;
+                    }
                 }
             }
             return JGB_ERR_INVALID;
@@ -327,13 +334,23 @@ static int scan_one_interval(const char* s, const char** e, jgb::value::data_typ
     // 找到区间的左部直接关闭：只有左部。
     else if(*p1 == ']' || *p1 == ')')
     {
-        return get_lower_part(p0, p1, type, interval);
+        int r = get_lower_part(p0, p1, type, interval);
+        if(!r)
+        {
+            ++ p1;
+            while(*p1 == ' ')
+            {
+                ++ p1;
+            }
+            if(*p1 == '\0')
+            {
+                return 0;
+            }
+        }
     }
-    else
-    {
-        // 无效
-        return JGB_ERR_INVALID;
-    }
+    // 无效
+    jgb_warning("invalid. { interval text = %s }", str);
+    return JGB_ERR_INVALID;
 }
 
 range_int::range_int(int len, bool is_required, bool is_array, bool is_bool, value* range_val_)
@@ -344,69 +361,51 @@ range_int::range_int(int len, bool is_required, bool is_array, bool is_bool, val
     jgb_assert(range_val_->len_ == 1);
     jgb_assert(range_val_->str_[0]);
 
+    intervals_.resize(range_val_->len_);
     int count = 0;
-    const char* s = range_val_->str_[0];
-    const char* e;
-    struct interval interval;
     int r;
-    while(true)
+    for(int i=0; i<range_val_->len_; i++)
     {
-        r = scan_one_interval(s, &e, jgb::value::data_type::integer, interval);
-        if(!r)
+        if(range_val_->str_[i])
         {
-            ++ count;
-            if(*e == '\0')
+            r = scan_one_interval(range_val_->str_[i], jgb::value::data_type::integer, intervals_[i]);
+            if(!r)
             {
-                break;
+                ++ count;
             }
-            s = *e;
-        }
-        else
-        {
-            break;
         }
     }
-    if(count)
-    {
-        intervals_.resize(count);
-        s = range_val_->str_[0];
-        for(int i=0; i<count; i++)
-        {
-            scan_one_interval(s, &e, jgb::value::data_type::integer, intervals_[i]);
-            *e = s;
-        }
-    }
+    intervals_.resize(count);
 }
 
-int range_int::validate(int ival)
+int range_int::validate(int64_t ival)
 {
     jgb_debug("{intervals.size() = %d }", intervals_.size());
     for(uint i=0; i<intervals_.size(); i++)
     {
-        if(intervals_[i].has_lower && intervals_[i].has_upper)
+        if(intervals_[i].lower.has)
         {
-            jgb_debug("{ ival = %ld, lower = %ld, upper = %ld }", ival, intervals_[i].lower, intervals_[i].upper);
-            if(ival >= intervals_[i].lower && ival <= intervals_[i].upper)
+            if(ival < intervals_[i].lower.int64)
             {
-                return 0;
+                continue;
+            }
+            if(!intervals_[i].lower.inbound && ival == intervals_[i].lower.int64)
+            {
+                continue;
             }
         }
-        else if(intervals_[i].has_lower)
+        if(intervals_[i].upper.has)
         {
-            jgb_debug("{ ival = %ld, lower = %ld }", ival, intervals_[i].lower);
-            if(ival >= intervals_[i].lower)
+            if(ival > intervals_[i].upper.int64)
             {
-                return 0;
+                continue;
+            }
+            if(!intervals_[i].upper.inbound && ival == intervals_[i].upper.int64)
+            {
+                continue;
             }
         }
-        else if(intervals_[i].has_upper)
-        {
-            jgb_debug("{ ival = %ld, upper = %ld }", ival, intervals_[i].upper);
-            if(ival <= intervals_[i].upper)
-            {
-                return 0;
-            }
-        }
+        return 0;
     }
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
@@ -439,32 +438,22 @@ range_real::range_real(int len, bool is_required, bool is_array, value* range_va
     : range(value::data_type::real, len, is_required, is_array, false)
 {
     jgb_assert(range_val_);
-    jgb_assert(range_val_->type_ == value::data_type::object);
+    jgb_assert(range_val_->type_ == value::data_type::string);
     jgb_assert(range_val_->len_ > 0);
     intervals_.resize(range_val_->len_);
+
+    intervals_.resize(range_val_->len_);
     int count = 0;
-    for(int i = 0; i < range_val_->len_; i++)
+    int r;
+    for(int i=0; i<range_val_->len_; i++)
     {
-        config* c = range_val_->conf_[i];
-        jgb_assert(c);
-        double upper,lower;
-        bool has_upper,has_lower;
-        int r;
-        r = c->get("upper", upper);
-        has_upper = r == 0;
-        r = c->get("lower", lower);
-        has_lower = r == 0;
-        intervals_[count].has_upper = has_upper;
-        intervals_[count].has_lower = has_lower;
-        intervals_[count].upper = upper;
-        intervals_[count].lower = lower;
-        if(has_lower || has_upper)
+        if(range_val_->str_[i])
         {
-            ++ count;
-        }
-        else
-        {
-            jgb_warning("invalid interval");
+            r = scan_one_interval(range_val_->str_[i], jgb::value::data_type::real, intervals_[i]);
+            if(!r)
+            {
+                ++ count;
+            }
         }
     }
     intervals_.resize(count);
@@ -474,31 +463,29 @@ int range_real::validate(double rval)
 {
     for(uint i=0; i<intervals_.size(); i++)
     {
-        if(intervals_[i].has_lower && intervals_[i].has_upper)
+        if(intervals_[i].lower.has)
         {
-            jgb_debug("{ rval = %f, lower = %f, upper = %f }", rval, intervals_[i].lower, intervals_[i].upper);
-            if((rval > intervals_[i].lower || is_equal(rval, intervals_[i].lower))
-                && (rval < intervals_[i].upper || is_equal(rval, intervals_[i].upper)))
+            if(rval < intervals_[i].lower.real)
             {
-                return 0;
+                continue;
+            }
+            if(!intervals_[i].lower.inbound && jgb::is_equal(rval, intervals_[i].lower.real))
+            {
+                continue;
             }
         }
-        else if(intervals_[i].has_lower)
+        if(intervals_[i].upper.has)
         {
-            jgb_debug("{ rval = %f, lower = %f }", rval, intervals_[i].lower);
-            if(rval > intervals_[i].lower || is_equal(rval, intervals_[i].lower))
+            if(rval > intervals_[i].upper.real)
             {
-                return 0;
+                continue;
+            }
+            if(!intervals_[i].upper.inbound && jgb::is_equal(rval, intervals_[i].lower.real))
+            {
+                continue;
             }
         }
-        else if(intervals_[i].has_upper)
-        {
-            jgb_debug("{ rval = %f, upper = %f }", rval, intervals_[i].upper);
-            if(rval < intervals_[i].upper || is_equal(rval, intervals_[i].upper))
-            {
-                return 0;
-            }
-        }
+        return 0;
     }
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
@@ -540,19 +527,14 @@ range_re::range_re(int len, bool is_required, bool is_array, value* range_val_)
 {
     jgb_function();
     jgb_assert(range_val_);
-    jgb_assert(range_val_->type_ == value::data_type::object);
+    jgb_assert(range_val_->type_ == value::data_type::string);
     jgb_assert(range_val_->len_ > 0);
     pimpl_->re_vec_.resize(range_val_->len_);
     int count = 0;
     for(int i = 0; i < range_val_->len_; i++)
     {
-        const char* sval;
-        int r;
-        config* c = range_val_->conf_[i];
-        jgb_assert(c);
-
-        r = c->get("re", &sval);
-        if(!r)
+        const char* sval = range_val_->str_[i];
+        if(sval)
         {
             int errornumber;
             PCRE2_SIZE erroroffset;
@@ -704,7 +686,7 @@ static void walk_through(const char* path, range* ra, config* conf, struct schem
                 {
                     std::string xpath;
                     conf->get_path(xpath);
-                    xpath += s;
+                    xpath = xpath + '/' + std::string(s, e - s);
                     jgb_debug("param not provided. { path = %s }", xpath.c_str());
                     res->error_.push_back({xpath, JGB_ERR_SCHEMA_NOT_PRESENT});
                 }
@@ -861,8 +843,8 @@ range* range_factory::create(config* c)
                         range* ra = new range_enum(size, is_required, is_array, is_bool, val);
                         return ra;
                     }
-                    else if(val->type_ == value::data_type::object
-                        && val->len_ > 0)
+                    else if(val->type_ == value::data_type::string
+                               && val->len_ > 0)
                     {
                         // 范围型。
                         if(type == value::data_type::integer)
@@ -886,6 +868,7 @@ range* range_factory::create(config* c)
                     }
                     else
                     {
+                        std::cout << val << std::endl;
                         jgb_warning("schema range is invalid { path = %s }", "range");
                     }
                 }

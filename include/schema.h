@@ -67,7 +67,7 @@ public:
     {
         bool has;
         bool inbound;
-        union upper
+        union
         {
             int64_t int64;
             double real;
@@ -125,7 +125,7 @@ public:
     range_int(int len, bool is_required, bool is_array, bool is_bool, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
-    int validate(int ival);
+    int validate(int64_t ival);
 
     std::vector<struct interval> intervals_;
 };
@@ -138,13 +138,6 @@ public:
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(double rval);
 
-    struct interval
-    {
-        bool has_upper;
-        bool has_lower;
-        double upper;
-        double lower;
-    };
     std::vector<struct interval> intervals_;
 };
 
