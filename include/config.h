@@ -146,6 +146,8 @@ public:
     pair* find(const char* name, int n = 0) const;
 
     int64_t int64(const char* path);
+    std::string str(const char* path);
+    double real(const char* path);
 
     int get(const char* path, value** val);
     int get(const char* path, int& ival);

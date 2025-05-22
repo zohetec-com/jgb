@@ -375,6 +375,14 @@ static void test_get()
     jgb_assert(!r);
     jgb_assert(ival == 1234);
 
+    r = conf->get("a", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "123"));
+
+    r = conf->get("a1", &sval);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(sval, "456"));
+
     delete conf;
 }
 

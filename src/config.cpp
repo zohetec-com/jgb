@@ -25,6 +25,7 @@
 #include "error.h"
 #include "log.h"
 #include "helper.h"
+#include "constrains.h"
 
 namespace jgb
 {
@@ -345,23 +346,29 @@ void config::clear()
 pair* config::find(const char* name, int n) const
 {
     //jgb_debug("find. { name = %.*s }", n, name);
-    if(name)
+    char name_x[JGB_ATTR_NAME_MAX_LEN];
+    const char* p_name = name;
+    if(n)
+    {
+        if(n < JGB_ATTR_NAME_MAX_LEN)
+        {
+            memcpy(name_x, name, n);
+            name_x[n] = '\0';
+            p_name = name_x;
+        }
+        else
+        {
+            p_name = nullptr;
+            jgb_error("属性名长度超过上限。");
+        }
+    }
+    if(p_name)
     {
         for (auto it = pair_.begin(); it != pair_.end(); ++it)
         {
-            if(!n)
+            if(!strcmp(p_name, (*it)->name_))
             {
-                if(!strcmp(name, (*it)->name_))
-                {
-                    return *it;
-                }
-            }
-            else
-            {
-                if(!strncmp(name, (*it)->name_, n))
-                {
-                    return *it;
-                }
+                return *it;
             }
         }
     }
@@ -675,6 +682,22 @@ int64_t config::int64(const char* path)
     int r = get(path, lval);
     jgb_assert(!r);
     return lval;
+}
+
+std::string config::str(const char* path)
+{
+    std::string sval;
+    int r = get(path, sval);
+    jgb_assert(!r);
+    return sval;
+}
+
+double config::real(const char* path)
+{
+    double rval;
+    int r = get(path, rval);
+    jgb_assert(!r);
+    return rval;
 }
 
 int config::get(const char* path, double& rval)

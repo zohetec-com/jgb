@@ -265,7 +265,7 @@ static config* create(json_t* json)
 {
     config* conf = nullptr;
     jgb_assert(json);
-#ifdef DEBUG
+#if 0
     char* json_text = json_dumps(json, 0);
     jgb_debug("json: %s", json_text);
     free(json_text);
