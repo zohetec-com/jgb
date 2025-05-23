@@ -634,25 +634,30 @@ int config::get(const char* path, value** val, int& idx)
     return JGB_ERR_INVALID;
 }
 
+int config::get(const char* path, bool& bval)
+{
+    int r;
+    int64_t lval;
+    r = get(path, lval);
+    if(!r)
+    {
+        bval = lval;
+        return 0;
+    }
+    return 0;
+}
+
 int config::get(const char* path, int& ival)
 {
     int r;
-    int idx;
-    value* pval;
-
-    r = get(path, &pval, idx);
+    int64_t lval;
+    r = get(path, lval);
     if(!r)
     {
-        jgb_assert(pval);
-        if(pval->type_ == value::data_type::integer
-                && pval->valid_
-                && pval->len_ > idx)
-        {
-            ival = pval->int_[idx];
-            return 0;
-        }
+        ival = lval;
+        return 0;
     }
-    return JGB_ERR_FAIL;
+    return 0;
 }
 
 int config::get(const char* path, int64_t& lval)
