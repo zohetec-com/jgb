@@ -868,8 +868,8 @@ range* range_factory::create(config* c)
                     }
                     else
                     {
-                        std::cout << val << std::endl;
-                        jgb_warning("schema range is invalid { path = %s }", "range");
+                        //std::cout << val << std::endl;
+                        jgb_warning("schema range is invalid. { range = %s }", c->to_string().c_str());
                     }
                 }
             }
