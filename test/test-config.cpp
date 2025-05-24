@@ -516,7 +516,6 @@ static void test_get_path()
 
     {
         std::string path;
-        jgb_mark();
         val->get_path(path);
         jgb_debug("{ path = %s }", path.c_str());
         jgb_assert(path == "/p7/p78/version");
@@ -527,7 +526,6 @@ static void test_get_path()
 
     {
         std::string path;
-        jgb_mark();
         val->get_path(path);
         jgb_debug("{ path = %s }", path.c_str());
         jgb_assert(path == "/p7/p78/version");

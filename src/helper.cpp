@@ -173,7 +173,6 @@ int stoi(const std::string& str, int& v)
     }
     catch (...)
     {
-        jgb_mark();
         fail = true;
     }
 
@@ -201,7 +200,6 @@ int stoll(const std::string& str, int64_t& v)
     }
     catch (...)
     {
-        jgb_mark();
         fail = true;
     }
 
@@ -229,7 +227,6 @@ int stod(const std::string& str, double& v)
     }
     catch (...)
     {
-        jgb_mark();
         fail = true;
     }
 
