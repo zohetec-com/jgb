@@ -908,11 +908,73 @@ static void test_schema_2()
     delete schema;
 }
 
+static void test_conf()
+{
+    jgb::config* conf = new jgb::config;
+    int r;
+    int iv;
+    double rv;
+    conf->set("a", 20250524);
+    iv = conf->int64("a");
+    jgb_assert(iv == 20250524);
+    iv = 0;
+    r = conf->get("a", iv);
+    jgb_assert(!r);
+    jgb_assert(iv == 20250524);
+    r = conf->remove("a");
+    jgb_assert(!r);
+    std::cout << conf << std::endl;
+    r = conf->get("a", iv);
+    jgb_debug("r = %d", r);
+    jgb_assert(r);
+    r = conf->remove("a");
+    jgb_assert(r);
+    r = conf->set("b", 0.1234);
+    jgb_assert(!r);
+    rv = conf->real("b");
+    jgb_assert(jgb::is_equal(rv, 0.1234));
+    rv = 0;
+    r = conf->get("b", rv);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 0.1234));
+    r = conf->set("b", 0.4321);
+    jgb_assert(!r);
+    r = conf->get("b", rv);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 0.4321));
+    r = conf->set("b", "hello");
+    jgb_assert(r);
+    r = conf->set("b", 1234);
+    jgb_assert(!r);
+    r = conf->get("b", iv);
+    jgb_assert(!r);
+    jgb_assert(iv == 1234);
+    bool bv;
+    r = conf->set("c", 1, true, true);
+    jgb_assert(!r);
+    r = conf->get("c", bv);
+    jgb_assert(!r);
+    jgb_assert(bv == 1);
+    r = conf->set("c", 0);
+    jgb_assert(!r);
+    r = conf->get("c", bv);
+    jgb_assert(!r);
+    jgb_assert(!bv);
+    r = conf->set("d", "hello world");
+    jgb_assert(!r);
+    std::string sv;
+    sv = conf->str("d");
+    jgb_assert(!strcmp(sv.c_str(), "hello world"));
+    jgb_debug("{ conf = %s }", conf->to_string().c_str());
+    delete conf;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_conf();
     test_schema_2();
     test_schema();
     test_compare();

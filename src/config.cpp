@@ -582,7 +582,7 @@ int config::remove(const char* name)
         {
             delete (*it);
             pair_.erase(it);
-            break;
+            return 0;
         }
     }
     return JGB_ERR_IGNORED;
@@ -644,7 +644,7 @@ int config::get(const char* path, bool& bval)
         bval = lval;
         return 0;
     }
-    return 0;
+    return r;
 }
 
 int config::get(const char* path, int& ival)
@@ -657,7 +657,7 @@ int config::get(const char* path, int& ival)
         ival = lval;
         return 0;
     }
-    return 0;
+    return r;
 }
 
 int config::get(const char* path, int64_t& lval)
@@ -665,17 +665,23 @@ int config::get(const char* path, int64_t& lval)
     int r;
     int idx;
     value* pval;
-
     r = get(path, &pval, idx);
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->type_ == value::data_type::integer
-            && pval->valid_
+        if(pval->valid_
             && pval->len_ > idx)
         {
-            lval = pval->int_[idx];
-            return 0;
+            if(pval->type_ == value::data_type::integer)
+            {
+                lval = pval->int_[idx];
+                return 0;
+            }
+            else if(pval->type_ == value::data_type::real)
+            {
+                lval = pval->real_[idx];
+                return 0;
+            }
         }
     }
     return JGB_ERR_FAIL;
