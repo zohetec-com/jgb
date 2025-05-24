@@ -143,6 +143,21 @@ static void test_jpath_parse()
     jgb_assert(*e == '\0');
 }
 
+static void test_stox_fail()
+{
+    std::string str = "abc";
+    int r;
+    double rv;
+    int iv;
+    int64_t lv;
+    r = jgb::stod(str, rv);
+    jgb_assert(r);
+    r = jgb::stoi(str, iv);
+    jgb_assert(r);
+    r = jgb::stoll(str, lv);
+    jgb_assert(r);
+}
+
 static void test_stoi()
 {
     int v;
@@ -985,6 +1000,7 @@ static int init(void*)
     test_null_value();
 
     test_get_base_index();
+    test_stox_fail();
     test_stoi();
     test_const();
     test_jpath_parse();
