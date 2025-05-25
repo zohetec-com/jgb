@@ -26,6 +26,7 @@
 #include <jgb/app.h>
 #include <jgb/schema.h>
 #include <jgb/core.h>
+#include <boost/thread.hpp>
 
 static void test_null_conf()
 {
@@ -1058,7 +1059,17 @@ static int tsk_get(void* worker)
     return 0;
 }
 
-static loop_ptr_t loops[] = { tsk_set, tsk_get, tsk_get, nullptr };
+static int tsk_get_v2(void* worker)
+{
+    jgb::worker* w = (jgb::worker*) worker;
+    std::string str;
+    boost::shared_lock<boost::shared_mutex> lock { *static_cast<boost::shared_mutex*>(w->task_->instance_->get_mutex()) };
+    int r = w->task_->instance_->conf_->get("test", str);
+    jgb_assert(!r);
+    return 0;
+}
+
+static loop_ptr_t loops[] = { tsk_set, tsk_get, tsk_get, tsk_get_v2, nullptr };
 
 static jgb_loop_t loop
     {

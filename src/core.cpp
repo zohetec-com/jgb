@@ -94,7 +94,7 @@ struct core_worker
             }
         }
 
-        jgb_debug("loop exit. { app = %s, inst id = %d, worker id = %d, loope = %ld }",
+        jgb_debug("loop exit. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
                   w->task_->instance_->app_->name_.c_str(),
                   w->task_->instance_->id_,
                   w->id_,
@@ -351,6 +351,12 @@ struct instance::Impl
 {
     boost::shared_mutex rw_mutex;
 };
+
+void* instance::get_mutex()
+{
+    jgb_assert(pimpl_);
+    return &pimpl_->rw_mutex;
+}
 
 void instance::lock_shared()
 {

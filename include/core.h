@@ -98,6 +98,7 @@ public:
     int start();
     int stop();
 
+    void* get_mutex();
     void lock_shared();
     void unlock_shared();
     void lock();
