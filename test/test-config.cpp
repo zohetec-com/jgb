@@ -25,6 +25,7 @@
 #include <jgb/config_factory.h>
 #include <jgb/app.h>
 #include <jgb/schema.h>
+#include <jgb/core.h>
 
 static void test_null_conf()
 {
@@ -1015,6 +1016,57 @@ static int init(void*)
     return 0;
 }
 
+static int tsk_init(void* worker)
+{
+    jgb::worker* w = (jgb::worker*) worker;
+    int r = w->task_->instance_->conf_->set("test", "hello");
+    jgb_assert(!r);
+    return 0;
+}
+
+
+static int tsk_set(void* worker)
+{
+    jgb::worker* w = (jgb::worker*) worker;
+    int n = std::rand() % 100;
+    if(n == 0)
+    {
+        n = 100;
+    }
+    char str[101];
+    int i;
+    for(i=0; i<n; i++)
+    {
+        str[i] = 'x';
+    }
+    str[i] = '\0';
+    w->task_->instance_->lock();
+    int r = w->task_->instance_->conf_->set("test", str);
+    jgb_assert(!r);
+    w->task_->instance_->unlock();
+    return 0;
+}
+
+static int tsk_get(void* worker)
+{
+    jgb::worker* w = (jgb::worker*) worker;
+    std::string str;
+    w->task_->instance_->lock_shared();
+    int r = w->task_->instance_->conf_->get("test", str);
+    jgb_assert(!r);
+    w->task_->instance_->unlock_shared();
+    return 0;
+}
+
+static loop_ptr_t loops[] = { tsk_set, tsk_get, tsk_get, nullptr };
+
+static jgb_loop_t loop
+    {
+        .setup = tsk_init,
+        .loops = loops,
+        .exit = nullptr
+    };
+
 jgb_api_t test_config
 {
     .version = MAKE_API_VERSION(0, 1),
@@ -1024,5 +1076,5 @@ jgb_api_t test_config
     .create = nullptr,
     .destroy = nullptr,
     .commit = nullptr,
-    .loop = nullptr
+    .loop = &loop
 };
