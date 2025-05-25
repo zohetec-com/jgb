@@ -58,6 +58,7 @@ public:
     bool run_;
     bool exited_;  // 线程是否已结束循环。
     bool normal_; // 线程的结束状态：true-正常; false-异常
+    int64_t looped_;
 
 private:
     class Impl;
@@ -97,6 +98,11 @@ public:
     int start();
     int stop();
 
+    void lock_shared();
+    void unlock_shared();
+    void lock();
+    void unlock();
+
     app* app_;
     config* conf_;
     bool normal_;
@@ -105,6 +111,10 @@ public:
     int id_;
     // 用户数据
     void* user_;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> pimpl_;
 };
 
 class app

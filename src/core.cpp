@@ -57,6 +57,7 @@ struct core_worker
         jgb_loop_t* loop = w->task_->instance_->app_->api_->loop;
         bool single = w->task_->workers_.size() == 1;
 
+        w->looped_ = 0L;
         if(single)
         {
             jgb_assert(!w->id_);
@@ -75,6 +76,7 @@ struct core_worker
         while(w->run_)
         {
             r = loop->loops[w->id_](w);
+            ++ w->looped_;
             if(r)
             {
                 w->normal_ = false;
@@ -92,7 +94,11 @@ struct core_worker
             }
         }
 
-        jgb_debug("loop exit. { id = %d }", w->id_);
+        jgb_debug("loop exit. { app = %s, inst id = %d, worker id = %d, loope = %ld }",
+                  w->task_->instance_->app_->name_.c_str(),
+                  w->task_->instance_->id_,
+                  w->id_,
+                  w->looped_);
     }
 };
 
@@ -341,12 +347,42 @@ int task::stop()
     }
 }
 
+struct instance::Impl
+{
+    boost::shared_mutex rw_mutex;
+};
+
+void instance::lock_shared()
+{
+    jgb_assert(pimpl_);
+    pimpl_->rw_mutex.lock_shared();
+}
+
+void instance::unlock_shared()
+{
+    jgb_assert(pimpl_);
+    pimpl_->rw_mutex.unlock_shared();
+}
+
+void instance::lock()
+{
+    jgb_assert(pimpl_);
+    pimpl_->rw_mutex.lock();
+}
+
+void instance::unlock()
+{
+    jgb_assert(pimpl_);
+    pimpl_->rw_mutex.unlock();
+}
+
 instance::instance(int id, app* app, config* conf)
     : app_(app),
       conf_(conf),
       normal_(false),
       id_(id),
-      user_(nullptr)
+      user_(nullptr),
+      pimpl_(new Impl())
 {
     jgb_assert(app_);
     jgb_assert(conf_);
