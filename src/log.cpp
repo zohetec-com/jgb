@@ -71,47 +71,45 @@ static void to_stderr(int level, const char *line)
 
 void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *format, ...)
 {
+    va_list args;
+    va_start(args, format);
+
+    if(level == JGB_LOG_RAW)
+    {
+        if (isatty(2))
+        {
+            fprintf(stderr, "%c%s", 27, colours[level]);
+        }
+        vfprintf(stderr, format, args);
+        if (isatty(2))
+        {
+            fprintf(stderr, "%c[0m", 27);
+        }
+        return;
+    }
+
     char buf[LOG_BUF_SIZE];
     int len = LOG_BUF_SIZE;
     int off = 0;
     int n;
+    struct timeval tv;
+    struct tm tm;
+    struct tm *ptm = NULL;
 
-    if(level != JGB_LOG_RAW)
+    gettimeofday(&tv, NULL);
+    ptm = localtime_r(&tv.tv_sec, &tm);
+    if(ptm)
     {
-        struct timeval tv;
-        struct tm tm;
-        struct tm *ptm = NULL;
-
-        gettimeofday(&tv, NULL);
-        ptm = localtime_r(&tv.tv_sec, &tm);
-        if(ptm)
-        {
-            n = snprintf(buf + off, len,
-                         "[%04d/%02d/%02d %02d:%02d:%02d:%03d.%03d]",
-                         ptm->tm_year + 1900,
-                         ptm->tm_mon + 1,
-                         ptm->tm_mday,
-                         ptm->tm_hour,
-                         ptm->tm_min,
-                         ptm->tm_sec,
-                         (int) (tv.tv_usec / 1000),
-                         (int) (tv.tv_usec % 1000));
-            if(n > 0)
-            {
-                off += n;
-                len -= n;
-            }
-        }
-
-        pid_t tid = getpid();
-        n = snprintf(buf + off, len, "[%6d]", tid);
-        if(n > 0)
-        {
-            off += n;
-            len -= n;
-        }
-
-        n = snprintf(buf + off, len, "[%s:%d]%s", fname, lineno, log_level_name[level]);
+        n = snprintf(buf + off, len,
+                     "[%04d/%02d/%02d %02d:%02d:%02d:%03d.%03d]",
+                     ptm->tm_year + 1900,
+                     ptm->tm_mon + 1,
+                     ptm->tm_mday,
+                     ptm->tm_hour,
+                     ptm->tm_min,
+                     ptm->tm_sec,
+                     (int) (tv.tv_usec / 1000),
+                     (int) (tv.tv_usec % 1000));
         if(n > 0)
         {
             off += n;
@@ -119,8 +117,21 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
         }
     }
 
-    va_list args;
-    va_start(args, format);
+    pid_t tid = getpid();
+    n = snprintf(buf + off, len, "[%6d]", tid);
+    if(n > 0)
+    {
+        off += n;
+        len -= n;
+    }
+
+    n = snprintf(buf + off, len, "[%s:%d]%s", fname, lineno, log_level_name[level]);
+    if(n > 0)
+    {
+        off += n;
+        len -= n;
+    }
+
     n = vsnprintf(buf + off, len, format, args);
     if(n > 0)
     {
@@ -136,13 +147,10 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
     }
     else
     {
-        if(level != JGB_LOG_RAW)
+        if(buf[off - 1] != '\n')
         {
-            if(buf[off - 1] != '\n')
-            {
-                buf[off++] = '\n';
-                buf[off] = '\0';
-            }
+            buf[off++] = '\n';
+            buf[off] = '\0';
         }
     }
     to_stderr(level, buf);
