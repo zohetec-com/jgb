@@ -203,9 +203,8 @@ static void test_get_base_index()
     }
 }
 
-static void test_get()
+static void check_test_json(jgb::config* conf)
 {
-    jgb::config* conf = jgb::config_factory::create("test.json");
     int r;
     jgb::value* val;
 
@@ -399,7 +398,12 @@ static void test_get()
     r = conf->get("a1", &sval);
     jgb_assert(!r);
     jgb_assert(!strcmp(sval, "456"));
+}
 
+static void test_get()
+{
+    jgb::config* conf = jgb::config_factory::create("test.json");
+    check_test_json(conf);
     delete conf;
 }
 
@@ -1003,11 +1007,23 @@ static void test_create()
     delete c;
 }
 
+static void test_copy()
+{
+    jgb::config* c1 = jgb::config_factory::create("test.json");
+    jgb::config c2 = *c1;
+    check_test_json(&c2);
+    jgb::config* c3 = new jgb::config(*c1);
+    check_test_json(c3);
+    delete c1;
+    delete c3;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_copy();
     test_create();
     test_conf();
     test_schema_2();

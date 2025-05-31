@@ -58,6 +58,79 @@ value::~value()
     }
 }
 
+value::value(const value& other)
+{
+    len_ = other.len_;
+    type_ = other.type_;
+    is_array_ = other.is_array_;
+    is_bool_ = other.is_bool_;
+    valid_ = other.valid_;
+    // 调用者(caller)应当初始化 uplink_。
+    uplink_ = nullptr;
+    int_ = len_ > 0 ? new int64_t[len_]{} : nullptr;
+    if(valid_)
+    {
+        jgb_assert(len_ > 0);
+        if(type_ == data_type::string)
+        {
+            for(int i=0; i<len_; i++)
+            {
+                if(other.str_[i])
+                {
+                    str_[i] = strdup(other.str_[i]);
+                }
+                else
+                {
+                    str_[i] = nullptr;
+                }
+            }
+        }
+        else if(type_ == data_type::object)
+        {
+            for(int i=0; i<len_; i++)
+            {
+                if(other.conf_[i])
+                {
+                    conf_[i] = new config(*other.conf_[i]);
+                }
+                else
+                {
+                    conf_[i] = nullptr;
+                }
+            }
+        }
+        else if(type_ == data_type::integer || type_ == data_type::real)
+        {
+            jgb_assert(sizeof(int64_t) == sizeof(double));
+            for(int i=0; i<len_; i++)
+            {
+                int_[i] = other.int_[i];
+            }
+        }
+        else
+        {
+            jgb_assert(0);
+        }
+    }
+}
+
+void swap(value& a, value& b)
+{
+    std::swap(a.type_,b.type_);
+    std::swap(a.len_,b.len_);
+    std::swap(a.is_array_,b.is_array_);
+    std::swap(a.is_bool_,b.is_bool_);
+    std::swap(a.valid_,b.valid_);
+    std::swap(a.int_,b.int_);
+    std::swap(a.uplink_,b.uplink_);
+}
+
+value& value::operator=(value val)
+{
+    swap(*this, val);
+    return *this;
+}
+
 value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
     : uplink_(uplink)
 {
@@ -195,6 +268,26 @@ pair::pair(const char* name, value* value, config* uplink)
     name_ = strdup(name);
 }
 
+pair::pair(const pair& other)
+{
+    name_ = strdup(other.name_);
+    value_ = new value(*other.value_);
+    value_->uplink_ = this;
+}
+
+void swap(pair& a, pair& b)
+{
+    std::swap(a.name_,b.name_);
+    std::swap(a.value_,b.value_);
+    std::swap(a.uplink_,b.uplink_);
+}
+
+pair& pair::operator=(pair p)
+{
+    swap(*this, p);
+    return *this;
+}
+
 pair::~pair()
 {
     free((void*) name_);
@@ -328,6 +421,29 @@ config::config(value *uplink, int id)
       id_(id)
 {
     jgb_assert(!pair_.size());
+}
+
+config::config(const config& other)
+{
+    id_ = other.id_;
+    for (auto & i : other.pair_)
+    {
+        pair_.push_back(new pair(*i));
+        pair_.back()->uplink_ = this;
+    }
+}
+
+void swap(config& a, config& b)
+{
+    std::swap(a.id_, b.id_);
+    std::swap(a.uplink_, b.uplink_);
+    std::swap(a.pair_, b.pair_);
+}
+
+config& config::operator=(config c)
+{
+    swap(*this, c);
+    return *this;
 }
 
 config::~config()

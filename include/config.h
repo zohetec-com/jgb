@@ -57,8 +57,9 @@ public:
           bool is_array = false,
           bool is_bool = false,
           pair* uplink = nullptr);
-    value(const value& other) = delete;
-    value& operator=(const value&) = delete;
+    value(const value& other);
+    friend void swap(value& a, value& b);
+    value& operator=(value);
     ~value();
 
     double to_real(int idx = 0);
@@ -111,8 +112,9 @@ class pair
 {
 public:
     pair(const char* name, value* value, config* uplink);
-    pair(const pair& other) = delete;
-    pair& operator=(const pair&) = delete;
+    pair(const pair& other);
+    friend void swap(pair& a, pair& b);
+    pair& operator=(pair);
     ~pair();
 
     // 返回 pair 的 jpath。
@@ -132,8 +134,9 @@ class config
 {
 public:
     config(value* uplink = nullptr, int id = 0);
-    config(const config& other) = delete;
-    config& operator=(const config&) = delete;
+    config(const config& other);
+    friend void swap(config& a, config& b);
+    config& operator=(config);
 
     ~config();
 
