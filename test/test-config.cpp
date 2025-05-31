@@ -984,11 +984,31 @@ static void test_conf()
     delete conf;
 }
 
+static void test_create()
+{
+    jgb::config* c = new jgb::config;
+    jgb::value* val = new jgb::value(jgb::value::data_type::object, 2);
+    val->conf_[0]->set("x", 123);
+    val->conf_[1]->set("x", 345);
+    c->create("a", val);
+    jgb_assert(val->len_ == 2);
+    for(int i=0; i<val->len_; i++)
+    {
+        int r;
+        jgb::config* cc;
+        std::string path = "a" + std::string("[") + std::to_string(i) + "]";
+        r = c->get(path.c_str(), &cc);
+        jgb_assert(!r);
+    }
+    delete c;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_create();
     test_conf();
     test_schema_2();
     test_schema();

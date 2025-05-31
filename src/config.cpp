@@ -91,6 +91,7 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
             {
                 conf_[i] = new config;
             }
+            valid_ = true;
         }
     }
     else
