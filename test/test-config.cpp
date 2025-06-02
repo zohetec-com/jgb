@@ -862,25 +862,22 @@ static void test_get_dev_info()
     delete conf;
 }
 
-static void test_set()
+static void test_create()
 {
     jgb::config conf;
     int r;
-    for(int i=0; i<2; i++)
-    {
-        r = conf.set("type", "request");
-        jgb_assert(!r);
-        r = conf.set("id", "abc123");
-        jgb_assert(!r);
-        r = conf.set("mts", time(NULL));
-        jgb_assert(!r);
-        r = conf.set("command", "get /wsapi/v1/cvcam/sync/get_dev_info");
-        jgb_assert(!r);
-        r = conf.set("pai", 3.14);
-        jgb_assert(!r);
-        r = conf.set("str", std::string("hello"));
-        jgb_assert(!r);
-    }
+    r = conf.create("type", "request");
+    jgb_assert(!r);
+    r = conf.create("id", "abc123");
+    jgb_assert(!r);
+    r = conf.create("mts", time(NULL));
+    jgb_assert(!r);
+    r = conf.create("command", "get /wsapi/v1/cvcam/sync/get_dev_info");
+    jgb_assert(!r);
+    r = conf.create("pai", 3.14);
+    jgb_assert(!r);
+    r = conf.create("str", std::string("hello"));
+    jgb_assert(!r);
     std::cout << &conf << std::endl;
 }
 
@@ -933,7 +930,7 @@ static void test_conf()
     int r;
     int iv;
     double rv;
-    conf->set("a", 20250524);
+    conf->create("a", 20250524);
     iv = conf->int64("a");
     jgb_assert(iv == 20250524);
     iv = 0;
@@ -948,7 +945,7 @@ static void test_conf()
     jgb_assert(r);
     r = conf->remove("a");
     jgb_assert(r);
-    r = conf->set("b", 0.1234);
+    r = conf->create("b", 0.1234);
     jgb_assert(!r);
     rv = conf->real("b");
     jgb_assert(jgb::is_equal(rv, 0.1234));
@@ -969,7 +966,7 @@ static void test_conf()
     jgb_assert(!r);
     jgb_assert(iv == 1234);
     bool bv;
-    r = conf->set("c", 1, true, true);
+    r = conf->create("c", 1, true);
     jgb_assert(!r);
     r = conf->get("c", bv);
     jgb_assert(!r);
@@ -979,7 +976,7 @@ static void test_conf()
     r = conf->get("c", bv);
     jgb_assert(!r);
     jgb_assert(!bv);
-    r = conf->set("d", "hello world");
+    r = conf->create("d", "hello world");
     jgb_assert(!r);
     std::string sv;
     sv = conf->str("d");
@@ -988,22 +985,23 @@ static void test_conf()
     delete conf;
 }
 
-static void test_create()
+static void test_set()
 {
     jgb::config* c = new jgb::config;
     jgb::value* val = new jgb::value(jgb::value::data_type::object, 2);
-    val->conf_[0]->set("x", 123);
-    val->conf_[1]->set("x", 345);
+    int r;
+    r = val->conf_[0]->create("x", 123);
+    jgb_assert(!r);
+    r = val->conf_[1]->create("x", 345);
+    jgb_assert(!r);
     c->create("a", val);
     jgb_assert(val->len_ == 2);
-    for(int i=0; i<val->len_; i++)
-    {
-        int r;
-        jgb::config* cc;
-        std::string path = "a" + std::string("[") + std::to_string(i) + "]";
-        r = c->get(path.c_str(), &cc);
-        jgb_assert(!r);
-    }
+    jgb_assert(c->int64("a[0]/x") == 123);
+    jgb_assert(c->int64("a[1]/x") == 345);
+    c->set("a[0]/x", 567);
+    c->set("a[1]/x", 890);
+    jgb_assert(c->int64("a[0]/x") == 567);
+    jgb_assert(c->int64("a[1]/x") == 890);
     delete c;
 }
 
@@ -1014,8 +1012,19 @@ static void test_copy()
     check_test_json(&c2);
     jgb::config* c3 = new jgb::config(*c1);
     check_test_json(c3);
+    check_test_json(c1);
+    jgb::config* c4 = jgb::config_factory::create("update.json");
+    *c4 = *c1;
+    check_test_json(c4);
     delete c1;
     delete c3;
+    delete c4;
+    jgb::value* v1 = new jgb::value(jgb::value::data_type::integer, 2);
+    jgb::value* v2 = new jgb::value(jgb::value::data_type::integer, 2);
+    *v2 = *v1;
+    jgb::pair p1("a", v1, nullptr);
+    jgb::pair p2("b", v2, nullptr);
+    p2 = p2;
 }
 
 static int init(void*)
@@ -1036,7 +1045,6 @@ static int init(void*)
     test_object_value();
     test_value();
     test_null_value();
-
     test_get_base_index();
     test_stox_fail();
     test_stoi();
@@ -1056,11 +1064,10 @@ static int init(void*)
 static int tsk_init(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    int r = w->task_->instance_->conf_->set("test", "hello");
+    int r = w->task_->instance_->conf_->create("test", "hello");
     jgb_assert(!r);
     return 0;
 }
-
 
 static int tsk_set(void* worker)
 {

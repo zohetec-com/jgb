@@ -238,17 +238,17 @@ static config* create_config(json_t* json)
                 }
                 break;
             case JSON_STRING:
-                conf->set(key, json_string_value(json_val));
+                conf->create(key, json_string_value(json_val));
                 break;
             case JSON_INTEGER:
-                conf->set(key, (int64_t) json_integer_value(json_val));
+                conf->create(key, (int64_t) json_integer_value(json_val));
                 break;
             case JSON_REAL:
-                conf->set(key, json_real_value(json_val));
+                conf->create(key, json_real_value(json_val));
                 break;
             case JSON_TRUE:
             case JSON_FALSE:
-                conf->set(key, json_typeof(json_val) == JSON_TRUE, true, true);
+                conf->create(key, json_typeof(json_val) == JSON_TRUE);
                 break;
             case JSON_NULL:
                 conf->create(key);

@@ -166,6 +166,10 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
             }
             valid_ = true;
         }
+        else if(type_ == data_type::string)
+        {
+            valid_ = true;
+        }
     }
     else
     {
@@ -492,148 +496,204 @@ pair* config::find(const char* name, int n) const
     return nullptr;
 }
 
-int config::set(const char* name, int ival, bool create, bool is_bool)
+int config::set(const char* path, bool bval)
 {
-    int64_t lval = ival;
-    return set(name, lval, create, is_bool);
+    return set(path, (int64_t) bval);
 }
 
-int config::set(const char* name, int64_t lval, bool create, bool is_bool)
+int config::set(const char* path, int ival)
 {
-    if(!name)
-    {
-        return JGB_ERR_INVALID;
-    }
-
-    pair* pr = find(name);
-    if(!pr)
-    {
-        if(create)
-        {
-            jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, is_bool);
-            val->int_[0] = lval;
-            val->valid_ = true;
-            pair_.push_back(new pair(name, val, this));
-            val->uplink_ = pair_.back();
-            return 0;
-        }
-        return JGB_ERR_NOT_FOUND;
-    }
-
-    if(pr->value_->type_ == jgb::value::data_type::integer)
-    {
-        pr->value_->int_[0] = lval;
-        pr->value_->valid_ = true;
-        return 0;
-    }
-    else if(pr->value_->type_ == jgb::value::data_type::real)
-    {
-        pr->value_->real_[0] = lval;
-        pr->value_->valid_ = true;
-        return 0;
-    }
-    else
-    {
-        jgb_fail("set integer. { name = %s, type = %d }", name, (int) pr->value_->type_);
-        return JGB_ERR_INVALID;
-    }
+    return set(path, (int64_t) ival);
 }
 
-int config::set(const char* name, double rval, bool create)
+int config::set(const char* path, int64_t lval)
 {
-    if(!name)
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, idx);
+    if(!r)
     {
-        return JGB_ERR_INVALID;
-    }
-
-    pair* pr = find(name);
-    if(!pr)
-    {
-        if(create)
+        jgb_assert(pval);
+        if(pval->len_ > idx)
         {
-            jgb::value* val = new jgb::value(jgb::value::data_type::real);
-            val->real_[0] = rval;
-            val->valid_ = true;
-            pair_.push_back(new pair(name, val, this));
-            val->uplink_ = pair_.back();
-            return 0;
-        }
-        return JGB_ERR_NOT_FOUND;
-    }
-
-    if(pr->value_->type_ == jgb::value::data_type::real)
-    {
-        pr->value_->real_[0] = rval;
-        pr->value_->valid_ = true;
-        return 0;
-    }
-    else
-    {
-        jgb_fail("set real. { name = %s, type = %d }", name, (int) pr->value_->type_);
-        return JGB_ERR_INVALID;
-    }
-}
-
-// TODO: 把字符串值设置为 nullptr 或者 '/0'，valid_ 怎么算？
-int config::set(const char* name, const char* sval, bool create)
-{
-    if(!name)
-    {
-        return JGB_ERR_INVALID;
-    }
-
-    pair* pr = find(name);
-    if(!pr)
-    {
-        if(create)
-        {
-            jgb::value* val = new jgb::value(jgb::value::data_type::string);
-            if(sval)
+            if(pval->type_ == value::data_type::integer)
             {
-                jgb_assert(!val->str_[0]);
-                val->str_[0] = strdup(sval);
+                pval->int_[idx] = lval;
+                pval->valid_ = true;
+                return 0;
             }
-            // 字符串类型没有 unset 状态？
-            val->valid_ = true;
-            pair_.push_back(new pair(name, val, this));
-            val->uplink_ = pair_.back();
-            return 0;
+            else if(pval->type_ == value::data_type::real)
+            {
+                pval->real_[idx] = lval;
+                pval->valid_ = true;
+                return 0;
+            }
         }
-        return JGB_ERR_NOT_FOUND;
+#ifdef DEBUG
+        jgb_fail("set { path = %s, lval = %ld }", path, lval);
+#endif
+        return JGB_ERR_INVALID;
     }
+#ifdef DEBUG
+    jgb_fail("set { path = %s, lval = %ld }", path, lval);
+#endif
+    return r;
+}
 
-    if(pr->value_->type_ == jgb::value::data_type::string)
+int config::set(const char* path, double rval)
+{
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, idx);
+    if(!r)
     {
-        if(pr->value_->str_[0])
+        jgb_assert(pval);
+        if(pval->len_ > idx)
         {
-            free((void*)pr->value_->str_[0]);
+            if(pval->type_ == jgb::value::data_type::real)
+            {
+                pval->real_[idx] = rval;
+                pval->valid_ = true;
+                return 0;
+            }
         }
+#ifdef DEBUG
+        jgb_fail("set { path = %s, rval = %f }", path, rval);
+#endif
+        return JGB_ERR_INVALID;
+    }
+#ifdef DEBUG
+    jgb_fail("set { path = %s, rval = %f }", path, rval);
+#endif
+    return r;
+}
+
+int config::set(const char* path, const char* sval)
+{
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        if(pval->len_ > idx)
+        {
+            if(pval->type_ == jgb::value::data_type::string)
+            {
+                if(pval->str_[idx])
+                {
+                    free((void*)pval->str_[idx]);
+                    pval->str_[idx] = nullptr;
+                }
+                if(sval)
+                {
+                    pval->str_[idx] = strdup(sval);
+                }
+                jgb_assert(pval->valid_);
+                return 0;
+            }
+        }
+#ifdef DEBUG
+        jgb_fail("set { path = %s, sval = %s }", path, sval ? sval : "null");
+#endif
+        return JGB_ERR_INVALID;
+    }
+#ifdef DEBUG
+    jgb_fail("set { path = %s, sval = %s }", path, sval ? sval : "null");
+#endif
+    return r;
+}
+
+int config::set(const char* path, const std::string& sval)
+{
+    return set(path, sval.c_str());
+}
+
+int config::create(const char* name, bool bval)
+{
+    return create(name, (int64_t)bval, true);
+}
+
+int config::create(const char* name, int ival, bool is_bool)
+{
+    return create(name, (int64_t)ival, is_bool);
+}
+
+int config::create(const char* name, int64_t lval, bool is_bool)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+    pair* pr = find(name);
+    if(!pr)
+    {
+        jgb::value* val = new jgb::value(jgb::value::data_type::integer, 1, false, is_bool);
+        val->int_[0] = lval;
+        val->valid_ = true;
+        pair_.push_back(new pair(name, val, this));
+        val->uplink_ = pair_.back();
+        return 0;
+    }
+    return JGB_ERR_IGNORED;
+}
+
+int config::create(const char* name, double rval)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+    pair* pr = find(name);
+    if(!pr)
+    {
+        jgb::value* val = new jgb::value(jgb::value::data_type::real, 1, false);
+        val->real_[0] = rval;
+        val->valid_ = true;
+        pair_.push_back(new pair(name, val, this));
+        val->uplink_ = pair_.back();
+        return 0;
+    }
+    return JGB_ERR_IGNORED;
+}
+
+int config::create(const char* name, const char* sval)
+{
+    if(!name)
+    {
+        return JGB_ERR_INVALID;
+    }
+    pair* pr = find(name);
+    if(!pr)
+    {
+        jgb::value* val = new jgb::value(jgb::value::data_type::string, 1, false);
+        jgb_assert(!val->str_[0]);
         if(sval)
         {
-            pr->value_->str_[0] = strdup(sval);
+            val->str_[0] = strdup(sval);
         }
-        jgb_assert(pr->value_->valid_);
+        jgb_assert(val->valid_);
+        pair_.push_back(new pair(name, val, this));
+        val->uplink_ = pair_.back();
         return 0;
     }
-    else
-    {
-        jgb_fail("type mismatch. { name = %s, type = %d }", name, (int) pr->value_->type_);
-        return JGB_ERR_INVALID;
-    }
+    return JGB_ERR_IGNORED;
 }
 
-int config::set(const char* name, const std::string& sval, bool create)
+int config::create(const char* name, const std::string& sval)
 {
-    return set(name, sval.c_str(), create);
+    return create(name, sval.c_str());
 }
 
 int config::create(const char* name, config* cval)
 {
-    if(!name || !cval)
+    if(!name || strchr(name, '/') || !cval)
     {
         return JGB_ERR_INVALID;
     }
-
     pair* pr = find(name);
     if(!pr)
     {
@@ -653,11 +713,10 @@ int config::create(const char* name, config* cval)
 
 int config::create(const char* name)
 {
-    if(!name)
+    if(!name || strchr(name, '/'))
     {
         return JGB_ERR_INVALID;
     }
-
     pair* pr = find(name);
     if(!pr)
     {
@@ -671,11 +730,10 @@ int config::create(const char* name)
 
 int config::create(const char* name, value* val)
 {
-    if(!name)
+    if(!name || strchr(name, '/'))
     {
         return JGB_ERR_INVALID;
     }
-
     pair* pr = find(name);
     if(!pr)
     {
@@ -688,11 +746,10 @@ int config::create(const char* name, value* val)
 
 int config::remove(const char* name)
 {
-    if(!name)
+    if(!name || strchr(name, '/'))
     {
         return JGB_ERR_INVALID;
     }
-
     for(std::list<pair*>::iterator it = pair_.begin(); it != pair_.end(); ++it)
     {
         if(!strcmp((*it)->name_, name))

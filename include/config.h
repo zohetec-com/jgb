@@ -161,15 +161,22 @@ public:
     int get(const char* path, std::string& sval);
     int get(const char* path, config** cval);
 
-    int set(const char* name, int ival, bool create = true, bool is_bool = false);
-    int set(const char* name, int64_t lval, bool create = true, bool is_bool = false);
-    int set(const char* name, double rval, bool create = true);
-    int set(const char* name, const char* sval, bool create = true);
-    int set(const char* name, const std::string& sval, bool create = true);
+    int set(const char* path, bool bval);
+    int set(const char* path, int ival);
+    int set(const char* path, int64_t lval);
+    int set(const char* path, double rval);
+    int set(const char* path, const char* sval);
+    int set(const char* path, const std::string& sval);
 
     int create(const char* name, config* cval);
     int create(const char* name);
     int create(const char* name, value* val);
+    int create(const char* name, bool bval);
+    int create(const char* name, int ival, bool is_bool = false);
+    int create(const char* name, int64_t lval, bool is_bool = false);
+    int create(const char* name, double rval);
+    int create(const char* name, const char* sval);
+    int create(const char* name, const std::string& sval);
 
     int remove(const char* name);
 
