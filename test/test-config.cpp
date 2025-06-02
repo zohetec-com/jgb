@@ -49,7 +49,9 @@ static void test_datatype()
 static void test_object_value()
 {
     jgb::value* val = new jgb::value(jgb::value::data_type::object, 2);
-    val->conf_[0]->set("a", 1L);
+    int r;
+    r = val->conf_[0]->create("a", 1L);
+    jgb_assert(!r);
     std::ostringstream os;
     os << val;
     jgb_debug("%s", os.str().c_str());
