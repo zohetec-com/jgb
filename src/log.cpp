@@ -96,6 +96,13 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
     struct tm tm;
     struct tm *ptm = NULL;
 
+    n = snprintf(buf + off, len, "%s", log_level_name[level]);
+    if(n > 0)
+    {
+        off += n;
+        len -= n;
+    }
+
     gettimeofday(&tv, NULL);
     ptm = localtime_r(&tv.tv_sec, &tm);
     if(ptm)
@@ -125,7 +132,7 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
         len -= n;
     }
 
-    n = snprintf(buf + off, len, "[%s:%d]%s", fname, lineno, log_level_name[level]);
+    n = snprintf(buf + off, len, "[%s:%d]", fname, lineno);
     if(n > 0)
     {
         off += n;
