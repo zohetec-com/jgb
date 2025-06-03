@@ -41,6 +41,7 @@ static config* create_config(json_t* json);
 // 1 要求数组元素的数据类型相同:
 //   - 不支持混用 object,array,string,integer/real,true/false,null。
 // 2 暂不支持多维数组；
+// 3 不支持包含有 null 值的数组。
 static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_bool = NULL)
 {
     jgb_assert(json);
@@ -77,7 +78,7 @@ static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_b
         {
             *type = value::data_type::integer;
             is_bool_ = true;
-            jgb_debug("bool array");
+            //jgb_debug("bool array");
         }
         else if((json_type & int_real_type) && !(json_type & ~int_real_type))
         {
@@ -85,7 +86,7 @@ static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_b
         }
         else
         {
-            jgb_debug("不兼容的数组类型：{ json_type = 0x%x }", json_type);
+            //jgb_debug("不兼容的数组类型：{ json_type = 0x%x }", json_type);
             return false;
         }
 
@@ -187,7 +188,12 @@ static jgb::value* create_array(json_t* json)
         }
         else
         {
-            jgb_warning("不兼容的数组类型");
+#if 0
+            char* json_text = json_dumps(json, 0);
+            jgb_debug("json: %s", json_text);
+            free(json_text);
+#endif
+            //jgb_warning("不兼容的数组类型");
         }
         return nullptr;
     }
