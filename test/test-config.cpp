@@ -1029,11 +1029,33 @@ static void test_copy()
     p2 = p2;
 }
 
+static void test_get_2()
+{
+    jgb::config* c = jgb::config_factory::create("test.json");
+    int r;
+    int iv;
+    double rv;
+    r = c->get("p1", iv);
+    jgb_assert(!r);
+    jgb_assert(iv == 123);
+    r = c->get("p1", rv);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 123.0));
+    r = c->get("p2", iv);
+    jgb_assert(!r);
+    jgb_assert(iv == 3);
+    r = c->get("p2", rv);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 3.14));
+    delete c;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_get_2();
     test_copy();
     test_create();
     test_conf();

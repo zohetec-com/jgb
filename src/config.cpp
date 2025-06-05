@@ -895,12 +895,19 @@ int config::get(const char* path, double& rval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->type_ == value::data_type::real
-                && pval->valid_
-                && pval->len_ > idx)
+        if(pval->valid_
+            && pval->len_ > idx)
         {
-            rval = pval->real_[idx];
-            return 0;
+            if(pval->type_ == value::data_type::real)
+            {
+                rval = pval->real_[idx];
+                return 0;
+            }
+            else if(pval->type_ == value::data_type::integer)
+            {
+                rval = pval->int_[idx];
+                return 0;
+            }
         }
     }
     return JGB_ERR_FAIL;

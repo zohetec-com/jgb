@@ -9,7 +9,7 @@
                 "test_setup_fail_multiple",
                 "test_loop_fail",
                 "test_run"],
-            "library":"libtest-core.so"},
+            "library":"jgb.build/test/libtest-core.so"},
         {"name": ["test_core","test_run"],
             "library":["libtest-core.so","libtest-core.so"]},
         {"name":"test_core"},
