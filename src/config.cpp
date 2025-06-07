@@ -25,7 +25,6 @@
 #include "error.h"
 #include "log.h"
 #include "helper.h"
-#include "constrains.h"
 
 namespace jgb
 {
@@ -466,30 +465,24 @@ void config::clear()
 
 pair* config::find(const char* name, int n) const
 {
-    //jgb_debug("find. { name = %.*s }", n, name);
-    char name_x[JGB_ATTR_NAME_MAX_LEN];
-    const char* p_name = name;
-    if(n)
-    {
-        if(n < JGB_ATTR_NAME_MAX_LEN)
-        {
-            memcpy(name_x, name, n);
-            name_x[n] = '\0';
-            p_name = name_x;
-        }
-        else
-        {
-            p_name = nullptr;
-            jgb_error("属性名长度超过上限。");
-        }
-    }
-    if(p_name)
+    //jgb_debug("find. { name = %.*s, n = %d }", n, name, n);
+    if(name)
     {
         for (auto it = pair_.begin(); it != pair_.end(); ++it)
         {
-            if(!strcmp(p_name, (*it)->name_))
+            if(!n)
             {
-                return *it;
+                if(!strcmp(name, (*it)->name_))
+                {
+                    return *it;
+                }
+            }
+            else
+            {
+                if(!strncmp(name, (*it)->name_, n) && n == (int) strlen((*it)->name_))
+                {
+                    return *it;
+                }
             }
         }
     }
