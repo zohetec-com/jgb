@@ -13,4 +13,4 @@ target_include_directories(test-core PRIVATE ../include)
 
 add_library(template SHARED app_template.cpp)
 target_include_directories(template PRIVATE ../include)
-install(TARGETS template)
+#install(TARGETS template)
