@@ -44,12 +44,12 @@ range::~range()
 static void put_result(value* val, int idx, schema::result *res, int code)
 {
     jgb_assert(val);
-    jgb_debug("res = %p", res);
+    //jgb_debug("res = %p", res);
     if(res)
     {
         std::string path;
         val->get_path(path, idx, true);
-        jgb_debug("{ code = %d, path = %s }", code, path.c_str());
+        //jgb_debug("{ code = %d, path = %s }", code, path.c_str());
         if(!code)
         {
             res->ok_.push_back(path);
@@ -158,7 +158,7 @@ int range_enum::validate(int ival)
     {
         if(ival == enum_int_[i])
         {
-            jgb_debug("valid int. { ival = %ld }", ival);
+            //jgb_debug("valid int. { ival = %ld }", ival);
             return 0;
         }
     }
@@ -221,7 +221,7 @@ static int get_part_value(const char* s, const char* e, jgb::value::data_type ty
     }
     if(s < e)
     {
-        jgb_debug("{ s = %.*s }", e - s, s);
+        //jgb_debug("{ s = %.*s }", e - s, s);
         int r;
         if(type == jgb::value::data_type::integer)
         {
@@ -241,7 +241,7 @@ static int get_lower_part(const char* p0, const char* p1, jgb::value::data_type 
 {
     int r;
     r = get_part_value(p0 + 1, p1, type, interval.lower);
-    jgb_debug("{ r = %d }", r);
+    //jgb_debug("{ r = %d }", r);
     if(!r)
     {
         if(*p0 == '[')
@@ -388,7 +388,7 @@ range_int::range_int(int len, bool is_required, bool is_array, value* range_val_
 
 int range_int::validate(int64_t ival)
 {
-    jgb_debug("{intervals.size() = %d }", intervals_.size());
+    //jgb_debug("{ intervals.size() = %d }", intervals_.size());
     for(uint i=0; i<intervals_.size(); i++)
     {
         if(intervals_[i].lower.has)
@@ -509,7 +509,7 @@ int range_real::validate(value* val, schema::result* res)
         {
             //jgb_debug("%d: %f", i, val->real_[i]);
             r = validate(val->to_real(i));
-            jgb_debug("r = %d", r);
+            //jgb_debug("r = %d", r);
             put_result(val, i, res, r);
             if(r)
             {
@@ -563,7 +563,7 @@ range_re::range_re(int len, bool is_required, bool is_array, value* range_val_)
         }
     }
     pimpl_->re_vec_.resize(count);
-    jgb_debug("{ size = %lu }", pimpl_->re_vec_.size());
+    //jgb_debug("{ size = %lu }", pimpl_->re_vec_.size());
 }
 
 range_re::~range_re()
@@ -583,7 +583,7 @@ int range_re::validate(const char* str)
         pcre2_match_data *match_data;
         match_data = pcre2_match_data_create_from_pattern(i, NULL);
         int r = pcre2_match(i, (PCRE2_SPTR)str, strlen(str), 0, 0, match_data, nullptr);
-        jgb_debug("{ pattern %p, r = %d str = %.*s }", i, r, strlen(str), str);
+        //jgb_debug("{ pattern %p, r = %d str = %.*s }", i, r, strlen(str), str);
         pcre2_match_data_free(match_data);
         if(r >= 0)
         {
@@ -632,7 +632,7 @@ static void on_found_type(value* val, void* arg)
             schema* s = static_cast<schema*>(arg);
             std::string path;
             val->uplink_->uplink_->get_path(path);
-            jgb_debug("new range. { path = %s }", path.c_str());
+            //jgb_debug("new range. { path = %s }", path.c_str());
             jgb_assert(path.length() > 0);
             s->ranges_.insert(std::pair<std::string, range*>(path, ra));
         }
@@ -678,7 +678,7 @@ static void walk_through(const char* path, range* ra, config* conf, struct schem
     if(!r)
     {
         jgb_assert(s < e);
-        jgb_debug("{ part = %.*s }", e - s, s);
+        //jgb_debug("{ part = %.*s }", e - s, s);
         jgb::pair* pr = conf->find(s, (int)(e - s));
         // 已经没有子目录。
         if(*e == '\0')
@@ -694,8 +694,8 @@ static void walk_through(const char* path, range* ra, config* conf, struct schem
                 {
                     std::string xpath;
                     conf->get_path(xpath);
-                    xpath = xpath + '/' + std::string(s, e - s);
-                    jgb_debug("param not provided. { path = %s }", xpath.c_str());
+                    xpath = xpath + std::string(s, e - s);
+                    //jgb_debug("param not provided. { path = %s }", xpath.c_str());
                     res->error_.push_back({xpath, JGB_ERR_SCHEMA_NOT_PRESENT});
                 }
             }
@@ -743,12 +743,12 @@ void schema::dump(const schema::result& res)
 {
     jgb_raw("schema validate result:\n");
 
-    jgb_raw("error:\n");
-    if(res.error_.size())
+    jgb_raw("ok:\n");
+    if(res.ok_.size())
     {
-        for(auto i: res.error_)
+        for(auto i: res.ok_)
         {
-            jgb_raw("  %d %s\n", i.code, i.path.c_str());
+            jgb_raw("  %s\n", i.c_str());
         }
     }
     else
@@ -756,12 +756,12 @@ void schema::dump(const schema::result& res)
         jgb_raw("  none\n");
     }
 
-    jgb_raw("ok:\n");
-    if(res.ok_.size())
+    jgb_raw("error:\n");
+    if(res.error_.size())
     {
-        for(auto i: res.ok_)
+        for(auto i: res.error_)
         {
-            jgb_raw("  %s\n", i.c_str());
+            jgb_raw("  %d %s\n", i.code, i.path.c_str());
         }
     }
     else
