@@ -899,6 +899,7 @@ static void test_schema()
     int r;
     jgb_assert(schema);
     r = schema->validate(conf, &res);
+    jgb_debug("{ r = %d, ok size = %d }", r, res.ok_.size());
     jgb::schema::dump(res);
     jgb_assert(!r);
     // 没有错的。
@@ -917,6 +918,7 @@ static void test_schema_2()
     int r;
     jgb_assert(schema);
     r = schema->validate(conf, &res);
+    jgb_debug("{ r = %d, error size = %d }", r, res.error_.size());
     jgb::schema::dump(res);
     // 没有对的。
     jgb_assert(r);

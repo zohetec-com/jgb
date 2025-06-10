@@ -59,6 +59,10 @@
      "p49":{
        "type":"string",
        "range":["^abc$"]
+     },
+     "p4a":{
+       "type":"int",
+       "is_bool":true
      }
    },
   "p5":{
@@ -69,5 +73,10 @@
         "required":true,
         "size":2
        }
+   },
+   "p6":{
+     "type":"int",
+     "is_bool":true,
+     "required":true
    }
 }

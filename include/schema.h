@@ -80,14 +80,13 @@ public:
         struct part upper;
     };
 
-    range(value::data_type type, int len, bool is_required, bool is_array, bool is_bool);
+    range(value::data_type type, int len, bool is_required, bool is_array);
     virtual ~range();
 
     value::data_type type_;
     int len_;
     bool is_required_;
     bool is_array_;
-    bool is_bool_;
 
     virtual int validate(value* val, schema::result* res = nullptr);
 };
@@ -95,7 +94,9 @@ public:
 class range_enum : public range
 {
 public:
-    range_enum(int len, bool is_required, bool is_array, bool is_bool, value* range_val_);
+    range_enum(int len, bool is_required, bool is_array, value* range_val_);
+    // for bool
+    range_enum(int len, bool is_required, bool is_array);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(int ival);
@@ -122,7 +123,7 @@ private:
 class range_int : public range
 {
 public:
-    range_int(int len, bool is_required, bool is_array, bool is_bool, value* range_val_);
+    range_int(int len, bool is_required, bool is_array, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(int64_t ival);

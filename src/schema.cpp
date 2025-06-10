@@ -29,12 +29,11 @@
 namespace jgb
 {
 
-range::range(value::data_type type, int len, bool is_required, bool is_array, bool is_bool)
+range::range(value::data_type type, int len, bool is_required, bool is_array)
     : type_(type),
     len_(len),
     is_required_(is_required),
-    is_array_(is_array),
-    is_bool_(is_bool)
+    is_array_(is_array)
 {
 }
 
@@ -91,8 +90,8 @@ int range::validate(value* val, schema::result* res)
     return 0;
 }
 
-range_enum::range_enum(int len, bool is_required, bool is_array, bool is_bool, value* range_val_)
-    : range(value::data_type::integer,len,is_required, is_array,is_bool)
+range_enum::range_enum(int len, bool is_required, bool is_array, value* range_val_)
+    : range(value::data_type::integer,len,is_required, is_array)
 {
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::integer);
@@ -130,6 +129,15 @@ range_enum::range_enum(int len, bool is_required, bool is_array, bool is_bool, v
             jgb_warning("invalid alias type");
         }
     }
+}
+
+range_enum::range_enum(int len, bool is_required, bool is_array)
+    : range(value::data_type::integer,len,is_required, is_array)
+{
+    enum_int_.resize(2);
+    enum_int_[0] = 0;
+    enum_int_[0] = 1;
+    jgb_assert(enum_name_.empty());
 }
 
 int range_enum::validate(const char* str)
@@ -353,8 +361,8 @@ static int scan_one_interval(const char* str, jgb::value::data_type type, jgb::r
     return JGB_ERR_INVALID;
 }
 
-range_int::range_int(int len, bool is_required, bool is_array, bool is_bool, value* range_val_)
-    : range(value::data_type::integer, len, is_required, is_array, is_bool)
+range_int::range_int(int len, bool is_required, bool is_array, value* range_val_)
+    : range(value::data_type::integer, len, is_required, is_array)
 {
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::string);
@@ -435,7 +443,7 @@ int range_int::validate(value* val, schema::result* res)
 }
 
 range_real::range_real(int len, bool is_required, bool is_array, value* range_val_)
-    : range(value::data_type::real, len, is_required, is_array, false)
+    : range(value::data_type::real, len, is_required, is_array)
 {
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::string);
@@ -522,7 +530,7 @@ struct range_re::Impl
 };
 
 range_re::range_re(int len, bool is_required, bool is_array, value* range_val_)
-    : range(value::data_type::string, len, is_required, is_array, false),
+    : range(value::data_type::string, len, is_required, is_array),
       pimpl_(new Impl())
 {
     jgb_function();
@@ -830,6 +838,12 @@ range* range_factory::create(config* c)
                 is_array = 1;
             }
 
+            if(is_bool)
+            {
+                range* ra = new range_enum(size, is_required, is_array);
+                return ra;
+            }
+
             value* val;
             r = c->get("range", &val);
             if(!r)
@@ -840,7 +854,7 @@ range* range_factory::create(config* c)
                         && val->len_ > 0)
                     {
                         // enum 枚举型。
-                        range* ra = new range_enum(size, is_required, is_array, is_bool, val);
+                        range* ra = new range_enum(size, is_required, is_array, val);
                         return ra;
                     }
                     else if(val->type_ == value::data_type::string
@@ -850,7 +864,7 @@ range* range_factory::create(config* c)
                         if(type == value::data_type::integer)
                         {
                             // int 型范围型。
-                            range* ra = new range_int(size, is_required, is_array, is_bool, val);
+                            range* ra = new range_int(size, is_required, is_array, val);
                             return ra;
                         }
                         else if(type == value::data_type::real)
@@ -875,7 +889,7 @@ range* range_factory::create(config* c)
             }
             else
             {
-                range* ra = new range(type, size, is_required, is_array, is_bool);
+                range* ra = new range(type, size, is_required, is_array);
                 return ra;
             }
         }
