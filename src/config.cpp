@@ -190,14 +190,14 @@ double value::to_real(int idx)
     return 0.0;
 }
 
-int value::get(const char* path, value** val)
+int value::get(const char* path, value** val, int* idx)
 {
     if(!path || !val)
     {
         return JGB_ERR_INVALID;
     }
 
-    //jgb_debug("get. { path = %s }", path);
+    //jgb_debug("{ path = %s }", path);
 
     int r;
     const char* s = path;
@@ -214,33 +214,56 @@ int value::get(const char* path, value** val)
 
     if(*s != '\0')
     {
-        if(type_ == data_type::object)
+        int xidx;
+        r = str_to_index(xidx, s, e - 1);
+        if(r)
         {
-            // 注意：jpath_parse() 返回的 e 指向 ']' 的下一个字符。
-            // 如果 s 是下标
-            if(s < e && *s == '[' && *(e - 1) == ']')
+            if(type_ == data_type::object)
             {
-                int idx;
-                r = str_to_index(idx, s, e - 1);
-                if(!r && idx >= 0 && idx < len_)
+                return conf_[0]->get(s, val, idx);
+            }
+            // invalid
+        }
+        else
+        {
+            if(xidx >= 0 && xidx < len_)
+            {
+                if(type_ == data_type::object)
                 {
-                    //jgb_debug("{ jpath = %s, idx = %d }", e, idx);
-                    return conf_[idx]->get(e, val);
+                    if(*e != '\0')
+                    {
+                        return conf_[xidx]->get(e, val, idx);
+                    }
                 }
+                if(*e == '\0')
+                {
+                    *val = this;
+                    if(idx)
+                    {
+                        *idx = xidx;
+                    }
+                    return 0;
+                }
+                jgb_debug("{ e = %s }", e);
+                // invalid
             }
             else
             {
-                //jgb_debug("{ jpath = %s }", s);
-                return conf_[0]->get(s, val);
+                jgb_debug("{ s = %s, idx = %d }", s, idx);
+                return JGB_ERR_NOT_FOUND;
             }
         }
 
-        jgb_debug("{ jpath = %s }", s);
+        jgb_debug("invalid. { s = %s }", s);
         return JGB_ERR_INVALID;
     }
     else
     {
         *val = this;
+        if(idx)
+        {
+            *idx = 0;
+        }
         return 0;
     }
 }
@@ -504,7 +527,7 @@ int config::set(const char* path, int64_t lval)
     int r;
     int idx;
     value* pval;
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);
@@ -539,7 +562,7 @@ int config::set(const char* path, double rval)
     int r;
     int idx;
     value* pval;
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);
@@ -568,7 +591,7 @@ int config::set(const char* path, const char* sval)
     int r;
     int idx;
     value* pval;
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);
@@ -755,12 +778,14 @@ int config::remove(const char* name)
     return JGB_ERR_IGNORED;
 }
 
-int config::get(const char* path, value** val)
+int config::get(const char* path, value** val, int* idx)
 {
     if(!path || !val)
     {
         return JGB_ERR_INVALID;
     }
+
+    //jgb_debug("{ path = %s }", path);
 
     int r;
     const char* s = path;
@@ -771,33 +796,22 @@ int config::get(const char* path, value** val)
     {
         if(*s != '\0')
         {
-            pair* pr = find(s, (int)(e - s));
-            if(pr)
+            int xidx;
+            r = str_to_index(xidx, s, e);
+            //jgb_debug("{ r = %d, s = %.*s }", r, (int)(e - s), s);
+            if(r)
             {
-                return pr->value_->get(e, val);
+                pair* pr = find(s, (int)(e - s));
+                if(pr)
+                {
+                    return pr->value_->get(e, val, idx);
+                }
             }
         }
     }
 
     *val = nullptr;
-    //jgb_debug("not found. { s = %.*s }", (int)(e - s), s);
-    return JGB_ERR_NOT_FOUND;
-}
-
-int config::get(const char* path, value** val, int& idx)
-{
-    if(path && val)
-    {
-        int r;
-        std::string base;
-
-        r = get_base_index(path, base, idx);
-        if(!r)
-        {
-            //jgb_debug("{ path = %s, base = %s, idx = %d}", path, base.c_str(), idx);
-            return get(base.c_str(), val);
-        }
-    }
+    jgb_debug("invalid. { s = %.*s }", (int)(e - s), s);
     return JGB_ERR_INVALID;
 }
 
@@ -832,7 +846,7 @@ int config::get(const char* path, int64_t& lval)
     int r;
     int idx;
     value* pval;
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);
@@ -884,7 +898,7 @@ int config::get(const char* path, double& rval)
     int idx;
     value* pval;
 
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);
@@ -912,7 +926,7 @@ int config::get(const char* path, const char** sval)
     int idx;
     value* pval;
 
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);
@@ -946,7 +960,7 @@ int config::get(const char* path, config** cval)
     int idx;
     value* pval;
 
-    r = get(path, &pval, idx);
+    r = get(path, &pval, &idx);
     if(!r)
     {
         jgb_assert(pval);

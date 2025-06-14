@@ -64,7 +64,7 @@ public:
 
     double to_real(int idx = 0);
 
-    int get(const char* path, value** val);
+    int get(const char* path, value** val, int* idx=nullptr);
 
     // 返回 value 的 jpath。
     // 如果 idx 取值非0且有效，则在路径末尾添加 "[$idx]"。
@@ -152,7 +152,7 @@ public:
     std::string str(const char* path);
     double real(const char* path);
 
-    int get(const char* path, value** val);
+    int get(const char* path, value** val, int* idx = nullptr);
     int get(const char* path, bool& bval);
     int get(const char* path, int& ival);
     int get(const char* path, int64_t& lval);

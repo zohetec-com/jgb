@@ -180,31 +180,6 @@ static void test_stoi()
     jgb_assert(v == 1);
 }
 
-static void test_get_base_index()
-{
-    {
-        const char* str = "/a/b/c[3]";
-        std::string base;
-        int idx = -1;
-        int r;
-        r = jgb::get_base_index(str, base, idx);
-        jgb_assert(!r);
-        jgb_assert(idx == 3);
-        jgb_assert(!strcmp(base.c_str(), "/a/b/c"));
-    }
-
-    {
-        const char* str = "[1]";
-        std::string base;
-        int idx = -1;
-        int r;
-        r = jgb::get_base_index(str, base, idx);
-        jgb_assert(!r);
-        jgb_assert(idx == 1);
-        jgb_assert(!strcmp(base.c_str(), ""));
-    }
-}
-
 static void check_test_json(jgb::config* conf)
 {
     int r;
@@ -216,6 +191,16 @@ static void check_test_json(jgb::config* conf)
     jgb_assert(val->len_ == 1);
     jgb_assert(val->int_[0] == 123);
     jgb_assert(val->valid_);
+
+    r = conf->get("/p1[0]", &val);
+    jgb_assert(!r);
+    jgb_assert(val->type_ == jgb::value::data_type::integer);
+    jgb_assert(val->len_ == 1);
+    jgb_assert(val->int_[0] == 123);
+    jgb_assert(val->valid_);
+
+    r = conf->get("/p1[0][0]", &val);
+    jgb_assert(r);
 
     int ival;
     const char* sval;
@@ -368,6 +353,13 @@ static void check_test_json(jgb::config* conf)
     r = conf->get("/p7/p78[0]/version", ival);
     jgb_assert(!r);
     jgb_assert(ival == 2204);
+
+    r = conf->get("/p7[0]/p78[0]/version[0]", ival);
+    jgb_assert(!r);
+    jgb_assert(ival == 2204);
+
+    r = conf->get("/p7[0]/p78[0]/version[0][0]", ival);
+    jgb_assert(r);
 
     r = conf->get("/p7/p78/os", &sval);
     jgb_assert(!r);
@@ -1071,7 +1063,6 @@ static int init(void*)
     test_object_value();
     test_value();
     test_null_value();
-    test_get_base_index();
     test_stox_fail();
     test_stoi();
     test_const();

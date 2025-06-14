@@ -55,55 +55,6 @@ int str_to_index(int& idx, const char* s, const char* e)
     return JGB_ERR_INVALID;
 }
 
-// 如 path = "/a/b/c[2]" 返回 path + 6
-static const char* get_last_index(const char* path)
-{
-    const char* s = path;
-
-    if(s && *s != '\0')
-    {
-        const char* p = path + strlen(path) - 1;
-        if(*p == ']')
-        {
-            -- p;
-            while(p >= s)
-            {
-                if(*p == '[')
-                {
-                    return p;
-                }
-                -- p;
-            }
-        }
-    }
-    return nullptr;
-}
-
-int get_base_index(const char* path, std::string& base, int& idx)
-{
-    if(!path)
-    {
-        return JGB_ERR_INVALID;
-    }
-
-    const char* sidx = get_last_index(path);
-    if(sidx)
-    {
-        if(!str_to_index(idx, sidx))
-        {
-            base = std::string(path, sidx);
-            return 0;
-        }
-        return JGB_ERR_INVALID;
-    }
-    else
-    {
-        idx = 0;
-        base = std::string(path);
-        return 0;
-    }
-}
-
 // 输入不能包含有空格！
 int jpath_parse(const char** start, const char** end)
 {
