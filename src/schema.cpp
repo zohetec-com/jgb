@@ -29,26 +29,80 @@
 namespace jgb
 {
 
-range::range(value::data_type type, int len, bool is_required, bool is_array)
+static int scan_one_interval(const char* str, jgb::value::data_type type, jgb::range::interval &interval);
+static bool validate(int64_t ival, jgb::range::interval& interval);
+
+range::range(value::data_type type, value* v_size, bool is_required, bool is_array)
     : type_(type),
-    len_(len),
+    len_(1),
+    inter_len_(nullptr),
     is_required_(is_required),
     is_array_(is_array)
 {
+    // 参数的长度：
+    // 1. 缺省为 1。
+    // 2. 可以设置为 0，表示无限制。
+    // 3. 也可以使用一个大于 0 的整数来限定参数的长度。
+    // 4. 也可以使用一个取值区间来限制参数的长度的范围。
+    if(!v_size)
+    {
+        len_ = 1;
+    }
+    else
+    {
+        if(v_size->type_ == value::data_type::integer)
+        {
+            if(v_size->len_ > 0)
+            {
+                len_ = v_size->int_[0];
+                if(len_ < 0)
+                {
+                    jgb_warning("invalid size. reset to 0. { size = %d }", len_);
+                    len_ = 0;
+                }
+            }
+        }
+        else if(v_size->type_ == value::data_type::string)
+        {
+            if(v_size->len_ > 0 && v_size->str_[0])
+            {
+                len_ = 0;
+                inter_len_ = new struct interval;
+                int r = scan_one_interval(v_size->str_[0], jgb::value::data_type::integer, *inter_len_);
+                if(r)
+                {
+                    jgb_warning("invalid interval. { text = %s }", v_size->str_[0]);
+
+                    delete inter_len_;
+                    inter_len_ = nullptr;
+                }
+            }
+        }
+        else
+        {
+            jgb_warning("invalid size type. reset to 0. { type = %d }", v_size->type_);
+            len_ = 0;
+        }
+    }
+    if(len_ != 1)
+    {
+        is_array_ = true;
+    }
 }
 
 range::~range()
 {
+    delete inter_len_;
 }
 
-static void put_result(value* val, int idx, schema::result *res, int code)
+static void put_result(value* val, int idx, schema::result *res, int code, bool show_idx_0 = true)
 {
     jgb_assert(val);
     //jgb_debug("res = %p", res);
     if(res)
     {
         std::string path;
-        val->get_path(path, idx, true);
+        val->get_path(path, idx, show_idx_0);
         //jgb_debug("{ code = %d, path = %s }", code, path.c_str());
         if(!code)
         {
@@ -61,6 +115,24 @@ static void put_result(value* val, int idx, schema::result *res, int code)
     }
 }
 
+int range::validate_type(value* val, schema::result *res)
+{
+    if(val->type_ != type_)
+    {
+        //jgb_debug("{ val->type_ = %d, type_ = %d }", val->type_, type_);
+        if(val->type_ == value::data_type::integer && type_ == value::data_type::real)
+        {
+            // 可以将整数类型赋值给实数类型，但反过来不可以。
+        }
+        else
+        {
+            put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_TYPE, false);
+            return JGB_ERR_SCHEMA_NOT_MATCHED_TYPE;
+        }
+    }
+    return 0;
+}
+
 int range::validate(value* val, schema::result* res)
 {
     if(!val)
@@ -68,30 +140,42 @@ int range::validate(value* val, schema::result* res)
         return JGB_ERR_INVALID;
     }
 
-    if(val->type_ != type_)
+    if(len_ || val->len_)
     {
-        if(val->type_ == value::data_type::integer && type_ == value::data_type::real)
+        int r = validate_type(val, res);
+        if(r)
         {
-            // compatible
-        }
-        else
-        {
-            put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_TYPE);
-            return JGB_ERR_SCHEMA_NOT_MATCHED_TYPE;
+            return r;
         }
     }
 
-    if(val->len_ != len_)
+    //jgb_debug("{ val->len_ = %d, len_ = %d }", val->len_, len_);
+
+    if(len_)
     {
-        put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH);
-        return JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH;
+        if(val->len_ != len_)
+        {
+            put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH, false);
+            return JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH;
+        }
+    }
+    else
+    {
+        if(inter_len_)
+        {
+            if(!jgb::validate(val->len_, *inter_len_))
+            {
+                put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH, false);
+                return JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH;
+            }
+        }
     }
 
     return 0;
 }
 
-range_enum::range_enum(int len, bool is_required, bool is_array, value* range_val_)
-    : range(value::data_type::integer,len,is_required, is_array)
+range_enum::range_enum(value *v_size, bool is_required, bool is_array, value* range_val_)
+    : range(value::data_type::integer, v_size, is_required, is_array)
 {
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::integer);
@@ -131,8 +215,8 @@ range_enum::range_enum(int len, bool is_required, bool is_array, value* range_va
     }
 }
 
-range_enum::range_enum(int len, bool is_required, bool is_array)
-    : range(value::data_type::integer,len,is_required, is_array)
+range_enum::range_enum(value *v_size, bool is_required, bool is_array)
+    : range(value::data_type::integer, v_size, is_required, is_array)
 {
     enum_int_.resize(2);
     enum_int_[0] = 0;
@@ -165,33 +249,38 @@ int range_enum::validate(int ival)
     return JGB_ERR_SCHEMA_NOT_MATCHED_RANGE;
 }
 
-int range_enum::validate(value* val, schema::result* res)
+int range_enum::validate_type(value* val, schema::result *res)
 {
-    int r;
     if(val->type_ == value::data_type::string
         && !enum_name_.empty())
     {
-        if(val->len_ != len_)
-        {
-            put_result(val, 0, res, JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH);
-            return JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH;
-        }
-        int err_count = 0;
-        for(int i=0; i<val->len_; i++)
-        {
-            r = validate(val->str_[i]);
-            put_result(val, i, res, r);
-            if(r)
-            {
-                ++ err_count;
-            }
-        }
-        return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
+        return 0;
     }
-    else
+    return range::validate_type(val, res);
+}
+
+int range_enum::validate(value* val, schema::result* res)
+{
+    int r;
+    r = range::validate(val, res);
+    if(!r)
     {
-        r = range::validate(val, res);
-        if(!r)
+        if(val->type_ == value::data_type::string)
+        {
+            jgb_assert(!enum_name_.empty());
+            int err_count = 0;
+            for(int i=0; i<val->len_; i++)
+            {
+                r = validate(val->str_[i]);
+                put_result(val, i, res, r);
+                if(r)
+                {
+                    ++ err_count;
+                }
+            }
+            return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
+        }
+        else
         {
             int err_count = 0;
             for(int i=0; i<val->len_; i++)
@@ -205,10 +294,10 @@ int range_enum::validate(value* val, schema::result* res)
             }
             return err_count > 0 ? JGB_ERR_SCHEMA_NOT_MATCHED_RANGE : 0;
         }
-        else
-        {
-            return r;
-        }
+    }
+    else
+    {
+        return r;
     }
 }
 
@@ -356,13 +445,38 @@ static int scan_one_interval(const char* str, jgb::value::data_type type, jgb::r
             }
         }
     }
-    // 无效
-    jgb_warning("invalid. { interval text = %s }", str);
     return JGB_ERR_INVALID;
 }
 
-range_int::range_int(int len, bool is_required, bool is_array, value* range_val_)
-    : range(value::data_type::integer, len, is_required, is_array)
+static bool validate(int64_t ival, jgb::range::interval& interval)
+{
+    if(interval.lower.has)
+    {
+        if(ival < interval.lower.int64)
+        {
+            return false;
+        }
+        if(!interval.lower.inbound && ival == interval.lower.int64)
+        {
+            return false;
+        }
+    }
+    if(interval.upper.has)
+    {
+        if(ival > interval.upper.int64)
+        {
+            return false;
+        }
+        if(!interval.upper.inbound && ival == interval.upper.int64)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+range_int::range_int(value *v_size, bool is_required, bool is_array, value* range_val_)
+    : range(value::data_type::integer, v_size, is_required, is_array)
 {
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::string);
@@ -381,6 +495,10 @@ range_int::range_int(int len, bool is_required, bool is_array, value* range_val_
             {
                 ++ count;
             }
+            else
+            {
+                jgb_warning("invalid interval. { text = %s }", range_val_->str_[i]);
+            }
         }
     }
     intervals_.resize(count);
@@ -391,27 +509,9 @@ int range_int::validate(int64_t ival)
     //jgb_debug("{ intervals.size() = %d }", intervals_.size());
     for(uint i=0; i<intervals_.size(); i++)
     {
-        if(intervals_[i].lower.has)
+        if(!jgb::validate(ival, intervals_[i]))
         {
-            if(ival < intervals_[i].lower.int64)
-            {
-                continue;
-            }
-            if(!intervals_[i].lower.inbound && ival == intervals_[i].lower.int64)
-            {
-                continue;
-            }
-        }
-        if(intervals_[i].upper.has)
-        {
-            if(ival > intervals_[i].upper.int64)
-            {
-                continue;
-            }
-            if(!intervals_[i].upper.inbound && ival == intervals_[i].upper.int64)
-            {
-                continue;
-            }
+            continue;
         }
         return 0;
     }
@@ -442,8 +542,8 @@ int range_int::validate(value* val, schema::result* res)
     }
 }
 
-range_real::range_real(int len, bool is_required, bool is_array, value* range_val_)
-    : range(value::data_type::real, len, is_required, is_array)
+range_real::range_real(value *v_size, bool is_required, bool is_array, value* range_val_)
+    : range(value::data_type::real, v_size, is_required, is_array)
 {
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::string);
@@ -461,6 +561,10 @@ range_real::range_real(int len, bool is_required, bool is_array, value* range_va
             if(!r)
             {
                 ++ count;
+            }
+            else
+            {
+                jgb_warning("invalid interval. { text = %s }", range_val_->str_[i]);
             }
         }
     }
@@ -529,8 +633,8 @@ struct range_re::Impl
     std::vector<pcre2_code*> re_vec_;
 };
 
-range_re::range_re(int len, bool is_required, bool is_array, value* range_val_)
-    : range(value::data_type::string, len, is_required, is_array),
+range_re::range_re(value *v_size, bool is_required, bool is_array, value* range_val_)
+    : range(value::data_type::string, v_size, is_required, is_array),
       pimpl_(new Impl())
 {
     jgb_function();
@@ -674,6 +778,7 @@ static void walk_through(const char* path, range* ra, config* conf, struct schem
     const char* s = path;
     const char* e;
 
+    //jgb_debug("{ path = %s }", path);
     r = jpath_parse(&s, &e);
     if(!r)
     {
@@ -694,7 +799,11 @@ static void walk_through(const char* path, range* ra, config* conf, struct schem
                 {
                     std::string xpath;
                     conf->get_path(xpath);
-                    xpath = xpath + std::string(s, e - s);
+                    if(xpath.back() != '/')
+                    {
+                        xpath += '/';
+                    }
+                    xpath += std::string(s, e - s);
                     //jgb_debug("param not provided. { path = %s }", xpath.c_str());
                     res->error_.push_back({xpath, JGB_ERR_SCHEMA_NOT_PRESENT});
                 }
@@ -821,26 +930,19 @@ range* range_factory::create(config* c)
         value::data_type type = get_type(s);
         if(type != value::data_type::none)
         {
-            int size = 1;
+            value* v_size = nullptr;
             int is_bool = 0;
-            int is_array;
+            int is_array = 0;
             int is_required = 0;
+
             c->get("required", is_required);
-            c->get("size", size);
+            c->get("size", &v_size);
             c->get("is_bool", is_bool);
-            if(size < 2)
-            {
-                is_array = 0;
-                c->get("is_array", is_array);
-            }
-            else
-            {
-                is_array = 1;
-            }
+            c->get("is_array", is_array);
 
             if(is_bool)
             {
-                range* ra = new range_enum(size, is_required, is_array);
+                range* ra = new range_enum(v_size, is_required, is_array);
                 return ra;
             }
 
@@ -854,7 +956,7 @@ range* range_factory::create(config* c)
                         && val->len_ > 0)
                     {
                         // enum 枚举型。
-                        range* ra = new range_enum(size, is_required, is_array, val);
+                        range* ra = new range_enum(v_size, is_required, is_array, val);
                         return ra;
                     }
                     else if(val->type_ == value::data_type::string
@@ -864,19 +966,19 @@ range* range_factory::create(config* c)
                         if(type == value::data_type::integer)
                         {
                             // int 型范围型。
-                            range* ra = new range_int(size, is_required, is_array, val);
+                            range* ra = new range_int(v_size, is_required, is_array, val);
                             return ra;
                         }
                         else if(type == value::data_type::real)
                         {
                             // real 型范围型。
-                            range* ra = new range_real(size, is_required, is_array, val);
+                            range* ra = new range_real(v_size, is_required, is_array, val);
                             return ra;
                         }
                         else if(type == value::data_type::string)
                         {
                             // re - 字符串型正则表达式。
-                            range* ra = new range_re(size, is_required, is_array, val);
+                            range* ra = new range_re(v_size, is_required, is_array, val);
                             return ra;
                         }
                     }
@@ -889,7 +991,7 @@ range* range_factory::create(config* c)
             }
             else
             {
-                range* ra = new range(type, size, is_required, is_array);
+                range* ra = new range(type, v_size, is_required, is_array);
                 return ra;
             }
         }

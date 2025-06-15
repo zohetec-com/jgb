@@ -78,5 +78,25 @@
      "type":"int",
      "is_bool":true,
      "required":true
+   },
+   "p7":{
+    "type":"object",
+    "required":true,
+    "size":0
+   },
+   "p8":{
+   "type":"object",
+   "required":true,
+   "size":"(0,)",
+   "p81":{
+     "type":"int",
+     "required":true,
+     "size":0
+    },
+   "p82":{
+     "type":"int",
+     "required":true,
+     "size":"(0,4)"
+    }
    }
 }

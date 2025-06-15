@@ -80,24 +80,27 @@ public:
         struct part upper;
     };
 
-    range(value::data_type type, int len, bool is_required, bool is_array);
+    range(value::data_type type, value *v_size, bool is_required, bool is_array);
     virtual ~range();
 
     value::data_type type_;
     int len_;
+    struct interval* inter_len_;
     bool is_required_;
     bool is_array_;
 
+    virtual int validate_type(value* val, schema::result* res);
     virtual int validate(value* val, schema::result* res = nullptr);
 };
 
 class range_enum : public range
 {
 public:
-    range_enum(int len, bool is_required, bool is_array, value* range_val_);
+    range_enum(value *v_size, bool is_required, bool is_array, value* range_val_);
     // for bool
-    range_enum(int len, bool is_required, bool is_array);
+    range_enum(value *v_size, bool is_required, bool is_array);
 
+    int validate_type(value* val, schema::result* res) override;
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(int ival);
     int validate(const char* str);
@@ -109,7 +112,7 @@ public:
 class range_re : public range
 {
 public:
-    range_re(int len, bool is_required, bool is_array, value* range_val_);
+    range_re(value *v_size, bool is_required, bool is_array, value* range_val_);
     ~range_re();
 
     int validate(const char* str);
@@ -123,7 +126,7 @@ private:
 class range_int : public range
 {
 public:
-    range_int(int len, bool is_required, bool is_array, value* range_val_);
+    range_int(value *v_size, bool is_required, bool is_array, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(int64_t ival);
@@ -134,7 +137,7 @@ public:
 class range_real : public range
 {
 public:
-    range_real(int len, bool is_required, bool is_array, value* range_val_);
+    range_real(value *v_size, bool is_required, bool is_array, value* range_val_);
 
     int validate(value* val, schema::result* res = nullptr) override;
     int validate(double rval);
