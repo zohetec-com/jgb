@@ -806,12 +806,16 @@ int config::get(const char* path, value** val, int* idx)
                 {
                     return pr->value_->get(e, val, idx);
                 }
+                else
+                {
+                    return JGB_ERR_NOT_FOUND;
+                }
             }
         }
     }
 
     *val = nullptr;
-    jgb_debug("invalid. { s = %.*s }", (int)(e - s), s);
+    jgb_debug("invalid. { path = %s, s = %.*s }", path, (int)(e - s), s);
     return JGB_ERR_INVALID;
 }
 
