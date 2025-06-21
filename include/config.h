@@ -161,12 +161,28 @@ public:
     int get(const char* path, std::string& sval);
     int get(const char* path, config** cval);
 
+    int getf(const char* format, value** val, ...);
+    int getf(const char* format, bool& bval, ...);
+    int getf(const char* format, int& ival, ...);
+    int getf(const char* format, int64_t& lval, ...);
+    int getf(const char* format, double& rval, ...);
+    int getf(const char* format, const char** sval, ...);
+    int getf(const char* format, std::string& sval, ...);
+    int getf(const char* format, config** cval, ...);
+
     int set(const char* path, bool bval);
     int set(const char* path, int ival);
     int set(const char* path, int64_t lval);
     int set(const char* path, double rval);
     int set(const char* path, const char* sval);
     int set(const char* path, const std::string& sval);
+
+    int setf(const char* format, bool bval, ...);
+    int setf(const char* format, int ival, ...);
+    int setf(const char* format, int64_t lval, ...);
+    int setf(const char* format, double rval, ...);
+    int setf(const char* format, const char* sval, ...);
+    int setf(const char* format, const std::string& sval, ...);
 
     int create(const char* name, config* cval);
     int create(const char* name);

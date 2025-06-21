@@ -25,6 +25,7 @@
 #include "error.h"
 #include "log.h"
 #include "helper.h"
+#include "constrains.h"
 
 namespace jgb
 {
@@ -628,6 +629,89 @@ int config::set(const char* path, const std::string& sval)
     return set(path, sval.c_str());
 }
 
+#define make_path(v) \
+char path[JGB_JPATH_MAX_LEN]; \
+    do { \
+        va_list args; \
+        int r; \
+        va_start(args, v); \
+        r = vsnprintf(path, JGB_JPATH_MAX_LEN, format, args); \
+        if(r < 0) \
+        { \
+                jgb_warning("vsnprintf failed. { format = %s }", format); \
+                va_end(args); \
+                return JGB_ERR_FAIL; \
+        } \
+        if(r >= JGB_JPATH_MAX_LEN) \
+        { \
+                jgb_warning("format too long. { format = %s }", format); \
+                va_end(args); \
+                return JGB_ERR_LIMIT; \
+        } \
+        /* jgb_debug("{ path = %s }", path); */ \
+        va_end(args); \
+    } while (0)
+
+int config::setf(const char* format, bool bval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(bval);
+    return set(path, bval);
+}
+
+int config::setf(const char* format, int ival, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(ival);
+    return set(path, ival);
+}
+
+int config::setf(const char* format, int64_t lval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(lval);
+    return set(path, lval);
+}
+
+int config::setf(const char* format, double rval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(rval);
+    return set(path, rval);
+}
+
+int config::setf(const char* format, const char* sval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(sval);
+    return set(path, sval);
+}
+
+int config::setf(const char* format, const std::string& sval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(sval);
+    return set(path, sval);
+}
+
 int config::create(const char* name, bool bval)
 {
     return create(name, (int64_t)bval, true);
@@ -870,6 +954,87 @@ int config::get(const char* path, int64_t& lval)
         }
     }
     return JGB_ERR_FAIL;
+}
+
+int config::getf(const char* format, value** val, ...)
+{
+    if(!format || !val)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(val);
+    return get(path, val);
+}
+
+int config::getf(const char* format, bool& bval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(bval);
+    return get(path, bval);
+}
+
+int config::getf(const char* format, int& ival, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(ival);
+    return get(path, ival);
+}
+
+int config::getf(const char* format, int64_t& lval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(lval);
+    return get(path, lval);
+}
+
+int config::getf(const char* format, double& rval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(rval);
+    return get(path, rval);
+}
+
+int config::getf(const char* format, config** cval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(cval);
+    return get(path, cval);
+}
+
+
+int config::getf(const char* format, const char** sval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(sval);
+    return get(path, sval);
+}
+
+int config::getf(const char* format, std::string& sval, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(sval);
+    return get(path, sval);
 }
 
 int64_t config::int64(const char* path)

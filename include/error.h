@@ -29,13 +29,14 @@ enum jgb_error
     JGB_OK = 0,                 // 成功，一切正常
     JGB_ERR_FAIL = 1000,        // 处理请求失败
     JGB_ERR_DENIED = 1001,      // 系统拒绝处理该请求
-    JGB_ERR_INVALID = 1002,     // 无效的请求：内容缺失、格式无效
+    JGB_ERR_INVALID = 1002,     // 无效的输入、请求：内容缺失、格式不符合要求
     JGB_ERR_NOT_SUPPORT = 1003, // 系统不支持处理该请求：尚未实现，或者功能已经被移除
     JGB_ERR_IGNORED = 1004,     // 系统忽略处理该请求：没有什么需要做的
     JGB_ERR_NOT_FOUND = 1005,   // 没有找到所请求的对象
     JGB_ERR_RETRY = 1006,       // 请重试：资源忙
     JGB_ERR_END = 1007,         // 主动结束
     JGB_ERR_SDK = 1008,         // 调用第三方 SDK 失败
+    JGB_ERR_LIMIT = 1009,       // 超越限制条件
     JGB_ERR_SCHEMA_NOT_MATCHED = 1100, // 所提供的参数格式与 SCHEMA 规定的不匹配
     JGB_ERR_SCHEMA_NOT_MATCHED_TYPE = 1101, // 所提供的参数的数据类型与 SCHEMA 规定的数据类型不匹配
     JGB_ERR_SCHEMA_NOT_MATCHED_LENGTH = 1102, // 所提供的参数的长度与 SCHEMA 规定的长度不匹配

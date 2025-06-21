@@ -1044,11 +1044,139 @@ static void test_get_2()
     delete c;
 }
 
+static void test_setf_and_getf()
+{
+    jgb::config* c = jgb::config_factory::create("test.json");
+    int r;
+    int iv;
+    int64_t lv;
+    int i = 0;
+    const char* cv;
+    std::string sv;
+    double rv;
+    bool bv;
+    jgb::value* pv;
+    jgb::config* conf;
+
+    r = c->getf("p7/p78[%d]", &pv, i);
+    jgb_assert(!r);
+    jgb_assert(pv->type_ == jgb::value::data_type::object);
+
+    r = c->getf("p7/p78[%d]", &conf, i);
+    jgb_assert(!r);
+    jgb_assert(conf->str("os") == "ubuntu");
+
+    r = c->getf("p13[%d]", bv, i);
+    jgb_assert(!r);
+    jgb_assert(bv);
+
+    r = c->getf("p7/p78[%d]/version", iv, i);
+    jgb_assert(!r);
+    jgb_assert(iv == 2204);
+
+    r = c->getf("p7/p78[%d]/os", &cv, i);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(cv, "ubuntu"));
+
+    r = c->getf("p7/p78[%d]/os", sv, i);
+    jgb_assert(!r);
+    jgb_assert( sv == "ubuntu");
+
+    r = c->getf("p7/p75[%d]", rv, i);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 1.0));
+
+    iv = 2404;
+    r = c->setf("p7/p78[%d]/version", iv, i);
+    jgb_assert(!r);
+    iv = 0;
+    r = c->getf("p7/p78[%d]/version", iv, i);
+    jgb_assert(!r);
+    jgb_assert(iv == 2404);
+
+    lv = 2404;
+    r = c->setf("p7/p78[%d]/version", lv, i);
+    jgb_assert(!r);
+    lv = 0;
+    r = c->getf("p7/p78[%d]/version", lv, i);
+    jgb_assert(!r);
+    jgb_assert(lv == 2404);
+
+    ++i;
+
+    r = c->getf("p13[%d]", bv, i);
+    jgb_assert(!r);
+    jgb_assert(!bv);
+
+    bv = true;
+    r = c->setf("p13[%d]", bv, i);
+    bv = false;
+    r = c->getf("p13[%d]", bv, i);
+    jgb_assert(!r);
+    jgb_assert(bv);
+
+    r = c->getf("p7/p78[%d]/version", iv, i);
+    jgb_assert(!r);
+    jgb_assert(iv == 1210);
+
+    r = c->getf("p7/p78[%d]/os", &cv, i);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(cv, "debian"));
+
+    r = c->getf("p7/p78[%d]/os", sv, i);
+    jgb_assert(!r);
+    jgb_assert( sv == "debian");
+
+    r = c->getf("p7/p75[%d]", rv, i);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 2.0));
+
+    iv = 1000;
+    r = c->setf("p7/p78[%d]/version", iv, i);
+    jgb_assert(!r);
+    iv = 0;
+    r = c->getf("p7/p78[%d]/version", iv, i);
+    jgb_assert(!r);
+    jgb_assert(iv == 1000);
+
+    lv = 2000;
+    r = c->setf("p7/p78[%d]/version", lv, i);
+    jgb_assert(!r);
+    lv = 0;
+    r = c->getf("p7/p78[%d]/version", lv, i);
+    jgb_assert(!r);
+    jgb_assert(lv == 2000);
+
+    r = c->setf("p7/p78[%d]/os", "redhat", i);
+    jgb_assert(!r);
+    r = c->getf("p7/p78[%d]/os", &cv, i);
+    jgb_assert(!r);
+    jgb_assert(!strcmp(cv, "redhat"));
+
+    std::string s = "jgb";
+    r = c->setf("p7/p78[%d]/os", s, i);
+    jgb_assert(!r);
+    r = c->getf("p7/p78[%d]/os", sv, i);
+    jgb_assert(!r);
+    jgb_assert(sv == s);
+
+    rv = 8.92;
+    r = c->setf("p7/p75[%d]", rv, i);
+    jgb_assert(!r);
+    rv = 0.0;
+    r = c->getf("p7/p75[%d]", rv, i);
+    jgb_assert(!r);
+    jgb_assert(jgb::is_equal(rv, 8.92));
+
+    delete c;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_setf_and_getf();
     test_get_2();
     test_copy();
     test_create();
