@@ -61,8 +61,7 @@
        "range":["^abc$"]
      },
      "p4a":{
-       "type":"int",
-       "is_bool":true
+       "type":"bool"
      }
    },
   "p5":{
@@ -75,8 +74,7 @@
        }
    },
    "p6":{
-     "type":"int",
-     "is_bool":true,
+     "type":"bool",
      "required":true
    },
    "p7":{

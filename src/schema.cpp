@@ -904,28 +904,40 @@ schema* schema_factory::create(config* c)
     return s;
 }
 
-value::data_type get_type(const char* s)
+void get_type(const char* s, value::data_type& type, int& is_bool)
 {
+    is_bool = 0;
     if(!strcmp(s, "int"))
     {
-        return value::data_type::integer;
+        type = value::data_type::integer;
+        return;
+    }
+    else if(!strcmp(s, "bool"))
+    {
+        type = value::data_type::integer;
+        is_bool = 1;
+        return;
     }
     else if(!strcmp(s, "real"))
     {
-        return value::data_type::real;
+        type = value::data_type::real;
+        return;
     }
     else if(!strcmp(s, "string"))
     {
-        return value::data_type::string;
+        type = value::data_type::string;
+        return;
     }
     else if(!strcmp(s, "object"))
     {
-        return value::data_type::object;
+        type = value::data_type::object;
+        return;
     }
     else
     {
+        type =  value::data_type::none;
         jgb_error("unknown type. { type = %s }", s);
-        return value::data_type::none;
+        return;
     }
 }
 
@@ -941,17 +953,17 @@ range* range_factory::create(config* c)
     r = c->get("type", &s);
     if(!r)
     {
-        value::data_type type = get_type(s);
+        value::data_type type;
+        int is_bool;
+        get_type(s, type, is_bool);
         if(type != value::data_type::none)
         {
             value* v_size = nullptr;
-            int is_bool = 0;
             int is_array = 0;
             int is_required = 0;
 
             c->get("required", is_required);
             c->get("size", &v_size);
-            c->get("is_bool", is_bool);
             c->get("is_array", is_array);
 
             if(is_bool)
