@@ -86,8 +86,8 @@ public:
     value::data_type type_;
     int len_;
     struct interval* inter_len_;
-    bool is_required_;
-    bool is_array_;
+    bool required_;
+    bool array_;
 
     virtual int validate_type(value* val, schema::result* res);
     virtual int validate(value* val, schema::result* res = nullptr);

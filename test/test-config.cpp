@@ -68,8 +68,8 @@ static void test_value()
     jgb_debug("{ offset type_ %u }", (uint) (intptr_t) &pval->type_);
     jgb_debug("{ offset len_ %u }", (uint) (intptr_t) &pval->len_);
     jgb_debug("{ offset valid_ %u }", (uint) (intptr_t) &pval->valid_);
-    jgb_debug("{ offset is_array_ %u }", (uint) (intptr_t) &pval->is_array_);
-    jgb_debug("{ offset is_bool_ %u }", (uint) (intptr_t) &pval->is_bool_);
+    jgb_debug("{ offset array_ %u }", (uint) (intptr_t) &pval->array_);
+    jgb_debug("{ offset bool_ %u }", (uint) (intptr_t) &pval->bool_);
 }
 
 static void test_null_value()
@@ -882,6 +882,71 @@ static void test_invalid()
     jgb_assert(!conf);
 }
 
+static void test_conf_2()
+{
+    jgb::config* conf = jgb::config_factory::create("test-data-1.json");
+    int iv;
+    double rv;
+    std::string sv;
+    int i = 0;
+    int j = 0;
+
+    iv = conf->int64f("p1/[%d]", -1, i++);
+    jgb_assert(iv == 1);
+
+    iv = conf->int64f("p1/[%d]", -1, i++);
+    jgb_assert(iv == 5);
+
+    iv = conf->int64f("p1/[%d]", -1, i++);
+    jgb_assert(iv == 10);
+
+    iv = conf->int64f("p1/[%d]", -1, i++);
+    jgb_assert(iv == -1);
+
+    i = 6;
+    j = 0;
+
+    rv = conf->realf("p4[%d]/p42[%d]", -1.0, i, j++);
+    jgb_assert(jgb::is_equal(rv, 7.01));
+
+    rv = conf->realf("p4[%d]/p42[%d]", -1.0, i, j++);
+    jgb_assert(jgb::is_equal(rv, 12.99));
+
+    rv = conf->realf("p4[%d]/p42[%d]", -1.0, i, j++);
+    jgb_assert(jgb::is_equal(rv, -1.0));
+
+    i = 0;
+    j = 0;
+
+    sv = conf->strf("p9[%d]", "", j++);
+    jgb_assert(sv == "将军爷");
+
+    sv = conf->strf("p9[%d]", "", j++);
+    jgb_assert(sv == "老爷宫");
+
+    j = 5;
+
+    sv = conf->strf("p9[%d]", "", j++);
+    jgb_assert(sv.empty());
+
+    conf->setf("p6", false);
+    jgb_assert(!conf->int64f("p6", true));
+
+    conf->setf("p6", true);
+    jgb_assert(conf->int64f("p6", false));
+
+    i = 0;
+    sv = "大岩";
+    conf->setf("p10[%d]", sv, i);
+    jgb_assert(conf->strf("p10[%d]", "", i) == sv);
+    ++ i;
+    sv = "塔顶";
+    conf->setf("p10[%d]", sv, i);
+    jgb_assert(conf->strf("p10[%d]", "", i) == sv);
+
+    delete conf;
+}
+
 static void test_schema()
 {
     jgb::config* schema_conf = jgb::config_factory::create("test-data.schema");
@@ -1171,11 +1236,39 @@ static void test_setf_and_getf()
     delete c;
 }
 
+static void test_bind()
+{
+    jgb::config* c = jgb::config_factory::create("test-bind.json");
+    int r;
+
+    for(int i=0; i<3; i++)
+    {
+        int64_t counter = 0L;
+        r = c->bindf("count", &counter);
+        jgb_assert(!r);
+        counter += 1000;
+        jgb_assert(c->int64("count") == 1000);
+        counter += 1000;
+        jgb_assert(c->int64("count") == 2000);
+
+        double adc = 0.001;
+        r = c->bindf("adc", &adc);
+        jgb_assert(!r);
+        jgb_assert(jgb::is_equal(c->real("adc"), 0.001));
+        adc += 0.001;
+        jgb_assert(jgb::is_equal(c->real("adc"), 0.002));
+    }
+
+    delete c;
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
 
+    test_conf_2();
+    test_bind();
     test_setf_and_getf();
     test_get_2();
     test_copy();

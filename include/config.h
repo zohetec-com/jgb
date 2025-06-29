@@ -71,9 +71,9 @@ public:
     int get(const char** sval, int idx = 0);
     int get(std::string& sval, int idx = 0);
 
-    int64_t int64(int64_t def = 0L);
-    std::string str(const std::string def = "");
-    double real(double def = 0.0);
+    int64_t int64(int idx = 0, int64_t def = 0L);
+    std::string str(int idx = 0, const std::string def = "");
+    double real(int idx = 0, double def = 0.0);
 
     int set(bool bval, int idx = 0);
     int set(int ival, int idx = 0);
@@ -81,6 +81,8 @@ public:
     int set(double rval, int idx = 0);
     int set(const char* sval, int idx = 0);
     int set(const std::string& sval, int idx = 0);
+
+    int bind(void* val);
 
     // 返回 value 的 jpath。
     // 如果 idx 取值非0且有效，则在路径末尾添加 "[$idx]"。
@@ -115,8 +117,9 @@ public:
 
     // TODO:优先采用 schema 定义。
     // 处理长度为 1 的情况。
-    bool is_array_;
-    bool is_bool_;
+    bool array_;
+    bool bool_;
+    bool binded_;
 
     // for jpath.
     pair* uplink_;
@@ -164,9 +167,13 @@ public:
     // n 用于限定 name 的长度，以配合 jpath 使用。
     pair* find(const char* name, int n = 0) const;
 
-    int64_t int64(const char* path);
-    std::string str(const char* path);
-    double real(const char* path);
+    int64_t int64(const char* path, int64_t def = 0L);
+    std::string str(const char* path, const std::string def = "");
+    double real(const char* path, double def = 0.0);
+
+    int64_t int64f(const char* format, int64_t def = 0L, ...);
+    std::string strf(const char* format, const std::string def = "", ...);
+    double realf(const char* format, double def = 0.0, ...);
 
     int get(const char* path, value** val, int* idx = nullptr);
     int get(const char* path, bool& bval);
@@ -199,6 +206,9 @@ public:
     int setf(const char* format, double rval, ...);
     int setf(const char* format, const char* sval, ...);
     int setf(const char* format, const std::string& sval, ...);
+
+    int bind(const char* path, void* val);
+    int bindf(const char* format, void* val, ...);
 
     int create(const char* name, config* cval);
     int create(const char* name);

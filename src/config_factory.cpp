@@ -52,7 +52,7 @@ static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_b
         size_t i;
         size_t size = json_array_size(json);
         int json_type = 0;
-        bool is_bool_ = false;
+        bool x_is_bool = false;
 
         for (i = 0; i < size; i++)
         {
@@ -77,7 +77,7 @@ static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_b
         else if((json_type & bool_type) && !(json_type & ~bool_type))
         {
             *type = value::data_type::integer;
-            is_bool_ = true;
+            x_is_bool = true;
             //jgb_debug("bool array");
         }
         else if((json_type & int_real_type) && !(json_type & ~int_real_type))
@@ -92,7 +92,7 @@ static bool json_array_get_type(json_t* json, value::data_type* type, bool* is_b
 
         if(is_bool)
         {
-            *is_bool = is_bool_;
+            *is_bool = x_is_bool;
         }
         return true;
     }

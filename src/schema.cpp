@@ -36,8 +36,8 @@ range::range(value::data_type type, value* v_size, bool is_required, bool is_arr
     : type_(type),
     len_(1),
     inter_len_(nullptr),
-    is_required_(is_required),
-    is_array_(is_array)
+    required_(is_required),
+    array_(is_array)
 {
     // 参数的长度：
     // 1. 缺省为 1。
@@ -86,7 +86,7 @@ range::range(value::data_type type, value* v_size, bool is_required, bool is_arr
     }
     if(len_ != 1)
     {
-        is_array_ = true;
+        array_ = true;
     }
 }
 
@@ -651,7 +651,7 @@ range_re::range_re(value *v_size, bool is_required, bool is_array, value* range_
     : range(value::data_type::string, v_size, is_required, is_array),
       pimpl_(new Impl())
 {
-    jgb_function();
+    //jgb_function();
     jgb_assert(range_val_);
     jgb_assert(range_val_->type_ == value::data_type::string);
     jgb_assert(range_val_->len_ > 0);
@@ -695,7 +695,7 @@ range_re::~range_re()
 
 int range_re::validate(const char* str)
 {
-    jgb_function();
+    //jgb_function();
     for(auto i: pimpl_->re_vec_)
     {
         pcre2_match_data *match_data;
@@ -809,7 +809,7 @@ static void walk_through(const char* path, range* ra, config* conf, struct schem
             }
             else
             {
-                if(ra->is_required_)
+                if(ra->required_)
                 {
                     std::string xpath;
                     conf->get_path(xpath);

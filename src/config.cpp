@@ -54,7 +54,28 @@ value::~value()
                 }
             }
         }
-        delete [] int_;
+        if(!binded_)
+        {
+            delete [] int_;
+        }
+    }
+}
+
+int value::bind(void* val)
+{
+    if(type_ == data_type::integer || type_ == data_type::real)
+    {
+        if(!binded_)
+        {
+            delete [] int_;
+        }
+        int_ = static_cast<int64_t*>(val);
+        binded_ = true;
+        return 0;
+    }
+    else
+    {
+        return JGB_ERR_NOT_SUPPORT;
     }
 }
 
@@ -62,8 +83,8 @@ value::value(const value& other)
 {
     len_ = other.len_;
     type_ = other.type_;
-    is_array_ = other.is_array_;
-    is_bool_ = other.is_bool_;
+    array_ = other.array_;
+    bool_ = other.bool_;
     valid_ = other.valid_;
     // 调用者(caller)应当初始化 uplink_。
     uplink_ = nullptr;
@@ -116,13 +137,14 @@ value::value(const value& other)
 
 void swap(value& a, value& b)
 {
-    std::swap(a.type_,b.type_);
-    std::swap(a.len_,b.len_);
-    std::swap(a.is_array_,b.is_array_);
-    std::swap(a.is_bool_,b.is_bool_);
-    std::swap(a.valid_,b.valid_);
-    std::swap(a.int_,b.int_);
-    std::swap(a.uplink_,b.uplink_);
+    std::swap(a.type_, b.type_);
+    std::swap(a.len_, b.len_);
+    std::swap(a.array_, b.array_);
+    std::swap(a.bool_, b.bool_);
+    std::swap(a.valid_, b.valid_);
+    std::swap(a.int_, b.int_);
+    std::swap(a.binded_, b.binded_);
+    std::swap(a.uplink_, b.uplink_);
 }
 
 value& value::operator=(value val)
@@ -132,7 +154,8 @@ value& value::operator=(value val)
 }
 
 value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
-    : uplink_(uplink)
+    : binded_(false),
+      uplink_(uplink)
 {
     if(len > object_len_max)
     {
@@ -144,13 +167,13 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
     len_ = len;
     if(len > 1)
     {
-        is_array_ = true;
+        array_ = true;
     }
     else
     {
-        is_array_ = is_array;
+        array_ = is_array;
     }
-    is_bool_ = is_bool;
+    bool_ = is_bool;
     valid_ = false;
 
     if(len_ > 0)
@@ -266,31 +289,31 @@ void value::get_path(std::string& path, int idx, bool show_idx_0)
         path += "/";
     }
     //jgb_debug("idx = %d, show_idx_0 = %d, final = %d", idx, show_idx_0, !schema && (idx || show_idx_0) && idx < len_);
-    if((idx || (is_array_ && show_idx_0)) && idx < len_)
+    if((idx || (array_ && show_idx_0)) && idx < len_)
     {
         path += '[' + std::to_string(idx) + ']';
     }
     //jgb_debug("{ path = %s }", path.c_str());
 }
 
-int64_t value::int64(int64_t def)
+int64_t value::int64(int idx, int64_t def)
 {
     int64_t lval = def;
-    get(lval);
+    get(lval, idx);
     return lval;
 }
 
-std::string value::str(const std::string def)
+std::string value::str(int idx, const std::string def)
 {
     std::string sval = def;
-    get(sval);
+    get(sval, idx);
     return sval;
 }
 
-double value::real(double def)
+double value::real(int idx, double def)
 {
     double rval = def;
-    get(rval);
+    get(rval, idx);
     return rval;
 }
 
@@ -536,7 +559,7 @@ void pair::get_path(std::string& path)
 
 std::ostream& operator<<(std::ostream& os, const value* val)
 {
-    if(val->is_array_)
+    if(val->array_)
     {
         os << '[';
     }
@@ -549,7 +572,7 @@ std::ostream& operator<<(std::ostream& os, const value* val)
         case value::data_type::integer:
             for(int i=0; i<val->len_; i++)
             {
-                if(!val->is_bool_)
+                if(!val->bool_)
                 {
                     os << val->int_[i];
                 }
@@ -602,7 +625,7 @@ std::ostream& operator<<(std::ostream& os, const value* val)
             break;
     }
 
-    if(val->is_array_)
+    if(val->array_)
     {
         os << ']';
     }
@@ -710,12 +733,36 @@ pair* config::find(const char* name, int n) const
 
 int config::set(const char* path, bool bval)
 {
-    return set(path, static_cast<int64_t>(bval));
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->set(bval, idx);
+    }
+#ifdef DEBUG
+    jgb_fail("set { path = %s, bval = %d }", path, bval);
+#endif
+    return r;
 }
 
 int config::set(const char* path, int ival)
 {
-    return set(path, static_cast<int64_t>(ival));
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->set(ival, idx);
+    }
+#ifdef DEBUG
+    jgb_fail("set { path = %s, ival = %d }", path, ival);
+#endif
+    return r;
 }
 
 int config::set(const char* path, int64_t lval)
@@ -771,7 +818,19 @@ int config::set(const char* path, const char* sval)
 
 int config::set(const char* path, const std::string& sval)
 {
-    return set(path, sval.c_str());
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->set(sval, idx);
+    }
+#ifdef DEBUG
+    jgb_fail("set { path = %s, sval = %s }", path, sval.c_str());
+#endif
+    return r;
 }
 
 #define make_path(v) \
@@ -796,6 +855,29 @@ char path[JGB_JPATH_MAX_LEN]; \
         /* jgb_debug("{ path = %s }", path); */ \
         va_end(args); \
     } while (0)
+
+#define make_path_def(def) \
+char path[JGB_JPATH_MAX_LEN]; \
+    do { \
+        va_list args; \
+        int r; \
+        va_start(args, def); \
+        r = vsnprintf(path, JGB_JPATH_MAX_LEN, format, args); \
+        if(r < 0) \
+        { \
+            jgb_warning("vsnprintf failed. { format = %s }", format); \
+            va_end(args); \
+            return def; \
+        } \
+        if(r >= JGB_JPATH_MAX_LEN) \
+        { \
+            jgb_warning("format too long. { format = %s }", format); \
+            va_end(args); \
+            return def; \
+        } \
+        /* jgb_debug("{ path = %s }", path); */ \
+        va_end(args); \
+} while (0)
 
 int config::setf(const char* format, bool bval, ...)
 {
@@ -855,6 +937,32 @@ int config::setf(const char* format, const std::string& sval, ...)
     }
     make_path(sval);
     return set(path, sval);
+}
+
+int config::bind(const char* path, void* val)
+{
+    int r;
+    value* pval;
+    r = get(path, &pval);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->bind(val);
+    }
+#ifdef DEBUG
+    jgb_fail("bind { path = %s }", path);
+#endif
+    return r;
+}
+
+int config::bindf(const char* format, void* val, ...)
+{
+    if(!format)
+    {
+        return JGB_ERR_INVALID;
+    }
+    make_path(val);
+    return bind(path, val);
 }
 
 int config::create(const char* name, bool bval)
@@ -1171,28 +1279,76 @@ int config::getf(const char* format, std::string& sval, ...)
     return get(path, sval);
 }
 
-int64_t config::int64(const char* path)
+int64_t config::int64(const char* path, int64_t def)
 {
-    int64_t lval = 0L;
-    int r = get(path, lval);
-    jgb_assert(!r);
-    return lval;
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->int64(idx, def);
+    }
+    return def;
 }
 
-std::string config::str(const char* path)
+std::string config::str(const char* path, const std::string def)
 {
-    std::string sval;
-    int r = get(path, sval);
-    jgb_assert(!r);
-    return sval;
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->str(idx, def);
+    }
+    return def;
 }
 
-double config::real(const char* path)
+double config::real(const char* path, double def)
 {
-    double rval;
-    int r = get(path, rval);
-    jgb_assert(!r);
-    return rval;
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->real(idx, def);
+    }
+    return def;
+}
+
+int64_t config::int64f(const char* format, int64_t def, ...)
+{
+    if(!format)
+    {
+        return def;
+    }
+    make_path_def(def);
+    return int64(path, def);
+}
+
+std::string config::strf(const char* format, const std::string def, ...)
+{
+    if(!format)
+    {
+        return def;
+    }
+    make_path_def(def);
+    return str(path, def);
+}
+
+double config::realf(const char* format, double def, ...)
+{
+    if(!format)
+    {
+        return def;
+    }
+    make_path_def(def);
+    return real(path, def);
 }
 
 int config::get(const char* path, double& rval)
@@ -1317,7 +1473,7 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
         {
             if(dest->type_ == value::data_type::integer)
             {
-                if(dest->is_bool_ == src->is_bool_)
+                if(dest->bool_ == src->bool_)
                 {
                     // FIXME! valid_ 需要考虑吗？
                     for(int i=0; i<dest->len_; i++)
@@ -1344,11 +1500,11 @@ int update(value* dest, value* src, std::list<std::string>* diff, bool dry_run)
                     std::string path;
                     src->get_path(path);
                     jgb_debug("type unmatched. { path = %s, " \
-                              "dest.type_ = %d, dest.is_bool_ = %d, " \
+                              "dest.type_ = %d, dest.bool_ = %d, " \
                               "src.type_ = %d, src.is_bool = %d }",
                               path.c_str(),
-                              (int) dest->type_, dest->is_bool_,
-                              (int) src->type_, src->is_bool_);
+                              (int) dest->type_, dest->bool_,
+                              (int) src->type_, src->bool_);
                 }
             }
             else if(dest->type_ == value::data_type::real)
