@@ -177,20 +177,6 @@ value::value(data_type type, int len, bool is_array, bool is_bool, pair *uplink)
     }
 }
 
-double value::to_real(int idx)
-{
-    if(type_ == value::data_type::real)
-    {
-        return real_[idx];
-    }
-    if(type_ == value::data_type::integer)
-    {
-        return double(int_[idx]);
-    }
-    jgb_assert(0);
-    return 0.0;
-}
-
 int value::get(const char* path, value** val, int* idx)
 {
     if(!path || !val)
@@ -285,6 +271,215 @@ void value::get_path(std::string& path, int idx, bool show_idx_0)
         path += '[' + std::to_string(idx) + ']';
     }
     //jgb_debug("{ path = %s }", path.c_str());
+}
+
+int64_t value::int64(int64_t def)
+{
+    int64_t lval = def;
+    get(lval);
+    return lval;
+}
+
+std::string value::str(const std::string def)
+{
+    std::string sval = def;
+    get(sval);
+    return sval;
+}
+
+double value::real(double def)
+{
+    double rval = def;
+    get(rval);
+    return rval;
+}
+
+int value::get(bool& bval, int idx)
+{
+    int64_t lval;
+    int r = get(lval, idx);
+    if(!r)
+    {
+        bval = (lval != 0);
+    }
+    return r;
+}
+
+int value::get(int& ival, int idx)
+{
+    int64_t lval;
+    int r = get(lval, idx);
+    if(!r)
+    {
+        ival = lval;
+    }
+    return r;
+}
+
+int value::get(int64_t& lval, int idx)
+{
+    if(valid_
+        && idx < len_
+        && idx >= 0)
+    {
+        if(type_ == data_type::integer)
+        {
+            lval = int_[idx];
+            return 0;
+        }
+        if(type_ == data_type::real)
+        {
+            lval = real_[idx];
+            return 0;
+        }
+        if(type_ == data_type::string)
+        {
+            int r;
+            r = stoll(str_[idx], lval);
+            if(!r)
+            {
+                return 0;
+            }
+            if(!strcasecmp("true", str_[idx]))
+            {
+                lval = 1L;
+                return 0;
+            }
+            if(!strcasecmp("false", str_[idx]))
+            {
+                lval = 0L;
+                return 0;
+            }
+        }
+    }
+    return JGB_ERR_INVALID;
+}
+
+int value::get(double& rval, int idx)
+{
+    if(valid_
+        && idx < len_
+        && idx >= 0)
+    {
+        if(type_ == data_type::real)
+        {
+            rval = real_[idx];
+            return 0;
+        }
+        if(type_ == data_type::integer)
+        {
+            rval = int_[idx];
+            return 0;
+        }
+        if(type_ == data_type::string)
+        {
+            return stod(str_[idx], rval);
+        }
+    }
+    return JGB_ERR_INVALID;
+}
+
+int value::get(const char** sval, int idx)
+{
+    if( sval
+        && idx < len_
+        && idx >= 0)
+    {
+        if(type_ == data_type::string)
+        {
+            *sval = str_[idx];
+            return 0;
+        }
+    }
+    return JGB_ERR_INVALID;
+}
+
+int value::get(std::string& sval, int idx)
+{
+    int r;
+    const char* s;
+    r = get(&s, idx);
+    if(!r)
+    {
+        sval = std::string(s);
+    }
+    return r;
+}
+
+int value::set(bool bval, int idx)
+{
+    return set(static_cast<int64_t>(bval), idx);
+}
+
+int value::set(int ival, int idx)
+{
+    return set(static_cast<int64_t>(ival), idx);
+}
+
+int value::set(int64_t lval, int idx)
+{
+    if(idx < len_
+        && idx >= 0)
+    {
+        if(type_ == value::data_type::integer)
+        {
+            int_[idx] = lval;
+            valid_ = true;
+            return 0;
+        }
+        else if(type_ == value::data_type::real)
+        {
+            real_[idx] = lval;
+            valid_ = true;
+            return 0;
+        }
+    }
+    return JGB_ERR_INVALID;
+}
+
+int value::set(double rval, int idx)
+{
+    if(idx < len_
+        && idx >= 0)
+    {
+        if(type_ == jgb::value::data_type::real)
+        {
+            real_[idx] = rval;
+            valid_ = true;
+            return 0;
+        }
+    }
+    return JGB_ERR_INVALID;
+}
+
+int value::set(const char* sval, int idx)
+{
+    if(idx < len_
+        && idx >= 0)
+    {
+        if(type_ == jgb::value::data_type::string)
+        {
+            if(str_[idx])
+            {
+                free((void*)str_[idx]);
+                str_[idx] = nullptr;
+            }
+            if(sval)
+            {
+                str_[idx] = strdup(sval);
+            }
+            jgb_assert(valid_);
+            return 0;
+        }
+        // 如果 json 转为 config/value 时，字符串类型的值已转换为 int 或 real 类型，
+        // 应该没有必要支持以字符串类型设置 int, real 类型了吧。
+    }
+    return JGB_ERR_INVALID;
+}
+
+int value::set(const std::string& sval, int idx)
+{
+    return set(sval.c_str(), idx);
 }
 
 pair::pair(const char* name, value* value, config* uplink)
@@ -515,12 +710,12 @@ pair* config::find(const char* name, int n) const
 
 int config::set(const char* path, bool bval)
 {
-    return set(path, (int64_t) bval);
+    return set(path, static_cast<int64_t>(bval));
 }
 
 int config::set(const char* path, int ival)
 {
-    return set(path, (int64_t) ival);
+    return set(path, static_cast<int64_t>(ival));
 }
 
 int config::set(const char* path, int64_t lval)
@@ -532,25 +727,7 @@ int config::set(const char* path, int64_t lval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->len_ > idx)
-        {
-            if(pval->type_ == value::data_type::integer)
-            {
-                pval->int_[idx] = lval;
-                pval->valid_ = true;
-                return 0;
-            }
-            else if(pval->type_ == value::data_type::real)
-            {
-                pval->real_[idx] = lval;
-                pval->valid_ = true;
-                return 0;
-            }
-        }
-#ifdef DEBUG
-        jgb_fail("set { path = %s, lval = %ld }", path, lval);
-#endif
-        return JGB_ERR_INVALID;
+        return pval->set(lval, idx);
     }
 #ifdef DEBUG
     jgb_fail("set { path = %s, lval = %ld }", path, lval);
@@ -567,19 +744,7 @@ int config::set(const char* path, double rval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->len_ > idx)
-        {
-            if(pval->type_ == jgb::value::data_type::real)
-            {
-                pval->real_[idx] = rval;
-                pval->valid_ = true;
-                return 0;
-            }
-        }
-#ifdef DEBUG
-        jgb_fail("set { path = %s, rval = %f }", path, rval);
-#endif
-        return JGB_ERR_INVALID;
+        return pval->set(rval, idx);
     }
 #ifdef DEBUG
     jgb_fail("set { path = %s, rval = %f }", path, rval);
@@ -596,27 +761,7 @@ int config::set(const char* path, const char* sval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->len_ > idx)
-        {
-            if(pval->type_ == jgb::value::data_type::string)
-            {
-                if(pval->str_[idx])
-                {
-                    free((void*)pval->str_[idx]);
-                    pval->str_[idx] = nullptr;
-                }
-                if(sval)
-                {
-                    pval->str_[idx] = strdup(sval);
-                }
-                jgb_assert(pval->valid_);
-                return 0;
-            }
-        }
-#ifdef DEBUG
-        jgb_fail("set { path = %s, sval = %s }", path, sval ? sval : "null");
-#endif
-        return JGB_ERR_INVALID;
+        return pval->set(sval, idx);
     }
 #ifdef DEBUG
     jgb_fail("set { path = %s, sval = %s }", path, sval ? sval : "null");
@@ -714,12 +859,12 @@ int config::setf(const char* format, const std::string& sval, ...)
 
 int config::create(const char* name, bool bval)
 {
-    return create(name, (int64_t)bval, true);
+    return create(name, static_cast<int64_t>(bval), true);
 }
 
 int config::create(const char* name, int ival, bool is_bool)
 {
-    return create(name, (int64_t)ival, is_bool);
+    return create(name, static_cast<int64_t>(ival), is_bool);
 }
 
 int config::create(const char* name, int64_t lval, bool is_bool)
@@ -906,12 +1051,13 @@ int config::get(const char* path, value** val, int* idx)
 int config::get(const char* path, bool& bval)
 {
     int r;
-    int64_t lval;
-    r = get(path, lval);
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
     if(!r)
     {
-        bval = lval;
-        return 0;
+        jgb_assert(pval);
+        return pval->get(bval, idx);
     }
     return r;
 }
@@ -919,12 +1065,13 @@ int config::get(const char* path, bool& bval)
 int config::get(const char* path, int& ival)
 {
     int r;
-    int64_t lval;
-    r = get(path, lval);
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
     if(!r)
     {
-        ival = lval;
-        return 0;
+        jgb_assert(pval);
+        return pval->get(ival, idx);
     }
     return r;
 }
@@ -938,22 +1085,9 @@ int config::get(const char* path, int64_t& lval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->valid_
-            && pval->len_ > idx)
-        {
-            if(pval->type_ == value::data_type::integer)
-            {
-                lval = pval->int_[idx];
-                return 0;
-            }
-            else if(pval->type_ == value::data_type::real)
-            {
-                lval = pval->real_[idx];
-                return 0;
-            }
-        }
+        return pval->get(lval, idx);
     }
-    return JGB_ERR_FAIL;
+    return r;
 }
 
 int config::getf(const char* format, value** val, ...)
@@ -1071,20 +1205,7 @@ int config::get(const char* path, double& rval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->valid_
-            && pval->len_ > idx)
-        {
-            if(pval->type_ == value::data_type::real)
-            {
-                rval = pval->real_[idx];
-                return 0;
-            }
-            else if(pval->type_ == value::data_type::integer)
-            {
-                rval = pval->int_[idx];
-                return 0;
-            }
-        }
+        return pval->get(rval, idx);
     }
     return JGB_ERR_FAIL;
 }
@@ -1099,15 +1220,9 @@ int config::get(const char* path, const char** sval)
     if(!r)
     {
         jgb_assert(pval);
-        if(pval->type_ == value::data_type::string
-                && pval->valid_
-                && pval->len_ > idx)
-        {
-            *sval = pval->str_[idx];
-            return 0;
-        }
+        return pval->get(sval, idx);
     }
-    return JGB_ERR_FAIL;
+    return r;
 }
 
 int config::get(const char* path, std::string& sval)

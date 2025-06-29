@@ -62,9 +62,25 @@ public:
     value& operator=(value);
     ~value();
 
-    double to_real(int idx = 0);
-
     int get(const char* path, value** val, int* idx=nullptr);
+
+    int get(bool& bval, int idx = 0);
+    int get(int& ival, int idx = 0);
+    int get(int64_t& lval, int idx = 0);
+    int get(double& rval, int idx = 0);
+    int get(const char** sval, int idx = 0);
+    int get(std::string& sval, int idx = 0);
+
+    int64_t int64(int64_t def = 0L);
+    std::string str(const std::string def = "");
+    double real(double def = 0.0);
+
+    int set(bool bval, int idx = 0);
+    int set(int ival, int idx = 0);
+    int set(int64_t lval, int idx = 0);
+    int set(double rval, int idx = 0);
+    int set(const char* sval, int idx = 0);
+    int set(const std::string& sval, int idx = 0);
 
     // 返回 value 的 jpath。
     // 如果 idx 取值非0且有效，则在路径末尾添加 "[$idx]"。
@@ -93,8 +109,8 @@ public:
     //   - true：有效，内容可以使用。
     //   - false：无效，内容不可使用。
     // 应用场景1：
-    //   - 在规格文件中定义参数 p 的类型为 int，在配置文件中设置 p 初值为 null。
-    //   - 期望：所创建的 p 参数的 valid_ 应为 false。
+    //   - 在规格(schema)文件中定义参数的类型为 int，在配置(config)文件中设置参数的初值为 null。
+    //   - 期望：所创建的参数的 valid_ 应为 false。
     bool valid_;
 
     // TODO:优先采用 schema 定义。

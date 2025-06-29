@@ -119,10 +119,15 @@ int range::validate_type(value* val, schema::result *res)
 {
     if(val->type_ != type_)
     {
-        //jgb_debug("{ val->type_ = %d, type_ = %d }", val->type_, type_);
+        jgb_debug("{ val->type_ = %d, type_ = %d }", val->type_, type_);
         if(val->type_ == value::data_type::integer && type_ == value::data_type::real)
         {
             // 可以将整数类型赋值给实数类型，但反过来不可以。
+            // 理由：可能损失精度。
+        }
+        else if(val->type_ == value::data_type::string)
+        {
+            // 字符串类型可能可以转换为 int, real。
         }
         else
         {
@@ -267,11 +272,20 @@ int range_enum::validate(value* val, schema::result* res)
     {
         if(val->type_ == value::data_type::string)
         {
-            jgb_assert(!enum_name_.empty());
+            //jgb_assert(!enum_name_.empty());
             int err_count = 0;
             for(int i=0; i<val->len_; i++)
             {
                 r = validate(val->str_[i]);
+                if(r)
+                {
+                    int64_t lval;
+                    r = val->get(lval);
+                    if(!r)
+                    {
+                        r = validate(lval);
+                    }
+                }
                 put_result(val, i, res, r);
                 if(r)
                 {
@@ -612,7 +626,7 @@ int range_real::validate(value* val, schema::result* res)
         for(int i=0; i<val->len_; i++)
         {
             //jgb_debug("%d: %f", i, val->real_[i]);
-            r = validate(val->to_real(i));
+            r = validate(val->real(i));
             //jgb_debug("r = %d", r);
             put_result(val, i, res, r);
             if(r)
