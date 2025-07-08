@@ -25,6 +25,7 @@
 #define HELPER_H_20250319
 
 #include <string>
+#include <unistd.h>
 
 namespace jgb
 {
@@ -38,4 +39,12 @@ int stod(const std::string& str, double& v);
 void sleep(int ms);
 
 } // namespace jgb
+
+#ifndef gettid
+#include <sys/syscall.h>
+inline pid_t gettid()
+{
+    return syscall(SYS_gettid);
+}
+#endif // gettid
 #endif // HELPER_H

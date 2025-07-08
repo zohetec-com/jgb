@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "log.h"
+#include "helper.h"
 
 #define LOG_BUF_SIZE 2048
 
@@ -124,7 +125,7 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
         }
     }
 
-    pid_t tid = getpid();
+    pid_t tid = gettid();
     n = snprintf(buf + off, len, "[%6d]", tid);
     if(n > 0)
     {
