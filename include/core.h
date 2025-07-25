@@ -61,7 +61,7 @@ public:
     int64_t looped_;
 
 private:
-    class Impl;
+    struct Impl;
     std::unique_ptr<Impl> pimpl_;
 };
 
@@ -114,7 +114,7 @@ public:
     void* user_;
 
 private:
-    class Impl;
+    struct Impl;
     std::unique_ptr<Impl> pimpl_;
 };
 

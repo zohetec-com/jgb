@@ -4,6 +4,7 @@
         {"name":["test_log",
                 "test_core",
                 "test_config",
+                "test_buffer",
                 "test_single_worker",
                 "test_setup_fail",
                 "test_setup_fail_multiple",

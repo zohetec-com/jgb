@@ -119,7 +119,7 @@ public:
     int validate(value* val, schema::result* res = nullptr) override;
 
 private:
-    class Impl;
+    struct Impl;
     std::unique_ptr<Impl> pimpl_;
 };
 
