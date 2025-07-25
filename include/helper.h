@@ -47,4 +47,7 @@ inline pid_t gettid()
     return syscall(SYS_gettid);
 }
 #endif // gettid
+
+#define JGB_ALIGN(x, a) (((x)+(a)-1)&~((a)-1))
+
 #endif // HELPER_H

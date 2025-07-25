@@ -5,6 +5,7 @@ add_library(test-core SHARED
     test-setup-fail.cpp
     test-setup-fail-multiple.cpp
     test-loop-fail.cpp
+    test-buffer.cpp
     test-run.cpp
     test-log.cpp)
 target_include_directories(test-core PRIVATE ../include)
