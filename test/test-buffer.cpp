@@ -1,37 +1,22 @@
 #include <jgb/core.h>
 #include <jgb/helper.h>
 #include <jgb/buffer.h>
+#include "check_u32_context.h"
+#include "write_32u_context.h"
 
+static jgb::write_32u_context* wr_ctx;
+static jgb::check_u32_context* chk_ctx[2];
 static jgb::buffer* buf = nullptr;
 static jgb::writer* wr = nullptr;
 static jgb::reader* rd[2] = {nullptr, nullptr};
 static uint8_t data[1024];
 static int data_len = 1024;
-#if 0
-static void fill()
-{
-    static uint32_t i = 0;
-    int n = data_len / sizeof(uint32_t);
-    for(int x=0; x<n; x++)
-    {
-        ((uint32_t*)data)[x] = i++;
-    }
-}
-
-static void check(int id, const jgb::frame& frm)
-{
-    static uint32_t i[2] = {0};
-    int n = frm.len / sizeof(uint32_t);
-    for(int x=0; x<n; x++)
-    {
-        jgb_assert(((uint32_t*)frm.buf)[x] == i[id]++);
-    }
-}
-#endif
 
 // 最接近缓冲区结束位置的一帧的结束位置与缓冲区的结束位置重合。
 static void test_01()
 {
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
     jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#01");
     jgb::writer* wr = buf->add_writer();
     jgb::reader* rd = buf->add_reader();
@@ -49,12 +34,15 @@ static void test_01()
     {
         //jgb_debug("{ i = %d }", i);
 
+        wr_ctx.fill(data, 239);
         r = wr->put(data, 239);
         jgb_assert(!r);
 
+        wr_ctx.fill(data, 237);
         r = wr->put(data, 237);
         jgb_assert(!r);
 
+        wr_ctx.fill(data, 495);
         r = wr->put(data, 495);
         jgb_assert(!r);
 
@@ -70,6 +58,7 @@ static void test_01()
         jgb_assert(frm.start_offset == 0);
         p += jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = rd->request_frame(&frm);
@@ -78,6 +67,7 @@ static void test_01()
         jgb_assert(frm.start_offset == 0);
         p += JGB_ALIGN(239,4) + jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = rd->request_frame(&frm);
@@ -86,6 +76,7 @@ static void test_01()
         jgb_assert(frm.start_offset == 0);
         p += JGB_ALIGN(237,4) + jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = rd->request_frame(&frm);
@@ -99,6 +90,8 @@ static void test_01()
 // 写者返回缓冲区开始位置写入，且不等待读者返回缓冲区开始位置。
 static void test_02()
 {
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
     jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#02");
     jgb::writer* wr = buf->add_writer();
     jgb::reader* rd = buf->add_reader();
@@ -116,12 +109,15 @@ static void test_02()
     {
         //jgb_debug("{ i = %d }", i);
 
+        wr_ctx.fill(data, 239);
         r = wr->put(data, 239);
         jgb_assert(!r);
 
+        wr_ctx.fill(data, 237);
         r = wr->put(data, 237);
         jgb_assert(!r);
 
+        wr_ctx.fill(data, 300);
         r = wr->put(data, 300);
         jgb_assert(!r);
 
@@ -134,6 +130,7 @@ static void test_02()
         jgb_assert(frm.start_offset == 0);
         p += jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = rd->request_frame(&frm);
@@ -142,6 +139,7 @@ static void test_02()
         jgb_assert(frm.start_offset == 0);
         p += JGB_ALIGN(239,4) + jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = rd->request_frame(&frm);
@@ -150,6 +148,7 @@ static void test_02()
         jgb_assert(frm.start_offset == 0);
         p += JGB_ALIGN(237,4) + jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
     }
     buf->remove_reader(rd);
@@ -160,6 +159,8 @@ static void test_02()
 // 写者返回缓冲区开始位置写入，等待读者返回缓冲区开始位置。
 static void test_03()
 {
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
     jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#03");
     jgb::writer* wr = buf->add_writer();
     jgb::reader* rd = buf->add_reader();
@@ -177,12 +178,15 @@ static void test_03()
     {
         //jgb_debug("{ i = %d }", i);
 
+        wr_ctx.fill(data, 239);
         r = wr->put(data, 239);
         jgb_assert(!r);
 
+        wr_ctx.fill(data, 237);
         r = wr->put(data, 237);
         jgb_assert(!r);
 
+        wr_ctx.fill(data, 800);
         r = wr->put(data, 800);
         jgb_assert(r);
 
@@ -195,6 +199,7 @@ static void test_03()
         jgb_assert(frm.start_offset == 0);
         p += jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = wr->put(data, 800);
@@ -206,6 +211,7 @@ static void test_03()
         jgb_assert(frm.start_offset == 0);
         p += JGB_ALIGN(239,4) + jgb::writer::fixed_header_size();
         jgb_assert(frm.buf == p);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
 
         r = wr->put(data, 800);
@@ -216,6 +222,7 @@ static void test_03()
         jgb_assert(frm.len == 800);
         jgb_assert(frm.start_offset == 0);
         jgb_assert(frm.buf == buf->start_ + jgb::writer::fixed_header_size());
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
         rd->release();
     }
     buf->remove_reader(rd);
@@ -223,8 +230,36 @@ static void test_03()
     jgb::buffer_manager::get_instance()->remove_buffer(buf);
 }
 
+static void test_check_u32()
+{
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
+    uint8_t data[1024];
+
+    wr_ctx.serial_ = 0x1000;
+    wr_ctx.fill(data, 1024);
+
+    *((uint32_t*)(data+10)) = 0;
+    *((uint32_t*)(data+99)) = 0xFFFFFFFFUL;
+
+    jgb_assert(chk_ctx.check(data, 1024));
+    chk_ctx.dump();
+
+    wr_ctx.fill(data, 11);
+    jgb_assert(!chk_ctx.check(data, 11));
+
+    wr_ctx.fill(data, 10);
+    jgb_assert(!chk_ctx.check(data, 10));
+
+    wr_ctx.fill(data, 3);
+    jgb_assert(!chk_ctx.check(data, 3));
+
+    chk_ctx.dump();
+}
+
 static int init(void*)
 {
+    test_check_u32();
     test_03();
     test_02();
     test_01();
@@ -233,6 +268,9 @@ static int init(void*)
 
 static int tsk_init(void*)
 {
+    wr_ctx = new jgb::write_32u_context();
+    chk_ctx[0] = new jgb::check_u32_context();
+    chk_ctx[1] = new jgb::check_u32_context();
     buf = jgb::buffer_manager::get_instance()->add_buffer("test#0");
     jgb_assert(buf);
     buf->resize(1024*1024);
@@ -253,7 +291,10 @@ static int tsk_read(void* worker)
     r = rd[w->id_]->request_frame(&frm);
     if(!r)
     {
-        jgb::sleep(1);
+        jgb_assert(frm.buf);
+        jgb_assert(frm.len > 0);
+        jgb_assert(frm.start_offset == 0);
+        jgb_assert(!chk_ctx[w->id_]->check(frm.buf, frm.len));
         rd[w->id_]->release();
     }
     return 0;
@@ -265,6 +306,7 @@ static int tsk_write(void*)
     if(len > 0)
     {
         int r;
+        wr_ctx->fill(data, len);
         r = wr->put(data, len);
         jgb_assert(!r);
         jgb::sleep(1);
@@ -274,6 +316,11 @@ static int tsk_write(void*)
 
 static void tsk_exit(void*)
 {
+    chk_ctx[0]->dump();
+    chk_ctx[1]->dump();
+    delete wr_ctx;
+    delete chk_ctx[0];
+    delete chk_ctx[1];
     buf->remove_reader(rd[0]);
     buf->remove_reader(rd[1]);
     buf->remove_writer(wr);
