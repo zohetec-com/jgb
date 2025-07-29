@@ -28,6 +28,7 @@
 #include <string.h>
 #include "log.h"
 #include "helper.h"
+#include <inttypes.h>
 
 #define LOG_BUF_SIZE 2048
 
@@ -162,4 +163,22 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
         }
     }
     to_stderr(level, buf);
+}
+
+void jgb_dump(void* buf, int len)
+{
+    jgb_raw("buf = %p, len = %d:\n", buf, len);
+    for(int i=0; i<len; i++)
+    {
+        if(!(i%16))
+        {
+            if(i)
+            {
+                jgb_raw("\n");
+            }
+            jgb_raw("%4x: ", i);
+        }
+        jgb_raw("%02x ", *(((uint8_t*)buf)+i));
+    }
+    jgb_raw("\n");
 }

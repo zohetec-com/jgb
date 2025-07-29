@@ -75,4 +75,6 @@ void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char
 
 #define jgb_raw(fmt, ...)       jgb_log(JGB_LOG_RAW, NULL, 0, fmt, ##__VA_ARGS__)
 
+void jgb_dump(void* buf, int len);
+
 #endif // LOG_H
