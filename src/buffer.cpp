@@ -109,6 +109,8 @@ int buffer::resize(int len)
         writers_->cur_ = start_;
     }
 
+    jgb_ok("buf resized. { id = %s, size = %d }", id_.c_str(), len_);
+
     return 0; // Success
 }
 

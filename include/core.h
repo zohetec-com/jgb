@@ -25,6 +25,7 @@
 #define APP_H_20250331
 
 #include <jgb/config.h>
+#include <jgb/buffer.h>
 #include <jgb/app.h>
 #include <vector>
 #include <list>
@@ -73,6 +74,9 @@ public:
     int start();
     int stop();
 
+    std::vector<reader*> readers_;
+    std::vector<writer*> writers_;
+
     instance* instance_;
     std::vector<worker> workers_;
     bool run_; // 控制线程：true-运行; false-结束
@@ -84,6 +88,12 @@ private:
 
     int start_multiple();
     int stop_multiple();
+
+    int init_io_readers();
+    int init_io_writers();
+
+    int init_io();
+    void release_io();
 };
 
 class instance

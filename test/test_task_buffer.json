@@ -1,0 +1,21 @@
+{
+  "instances": [
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#1"
+        },
+        {
+          "buf_id": "VENC#1"
+        }
+      ],
+      "writers": [
+        {
+          "buf_id": "VENC#1",
+          "buf_size": 1048576
+        }
+      ]
+    }}
+  ]
+}

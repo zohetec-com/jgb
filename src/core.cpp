@@ -239,6 +239,8 @@ int task::start()
             jgb_info("start task. { name = %s, id = %d }",
                       instance_->app_->name_.c_str(), instance_->id_);
 
+            init_io();
+
             // 启动任务
             int r;
             run_ = true;
@@ -256,6 +258,7 @@ int task::start()
             }
             else
             {
+                release_io();
                 // todo: 补充参数
                 jgb_fail("start task.");
             }
@@ -322,6 +325,7 @@ int task::stop()
             }
             if(!r)
             {
+                release_io();
                 state_ = task_state_idle;
             }
             else
@@ -344,6 +348,103 @@ int task::stop()
     else
     {
         return JGB_ERR_IGNORED;
+    }
+}
+
+int task::init_io_readers()
+{
+    int r;
+    value* val;
+
+    // 打开读者
+    r = instance_->conf_->get("task/readers", &val);
+    if(!r)
+    {
+        for(int i=0; i<val->len_; i++)
+        {
+            std::string id;
+            int r = val->conf_[i]->get("buf_id", id);
+            if(!r && !id.empty())
+            {
+                buffer* buf = buffer_manager::get_instance()->add_buffer(id);
+                if(buf)
+                {
+                    reader* rd = buf->add_reader();
+                    if(rd)
+                    {
+                        readers_.push_back(rd);
+                    }
+                    jgb_assert(rd);
+                }
+                jgb_assert(buf);
+            }
+        }
+    }
+    return 0;
+}
+
+int task::init_io_writers()
+{
+    int r;
+    value* val;
+
+    // 打开写者
+    r = instance_->conf_->get("task/writers", &val);
+    if(!r)
+    {
+        for(int i=0; i<val->len_; i++)
+        {
+            std::string id;
+            int r = val->conf_[i]->get("buf_id", id);
+            if(!r && !id.empty())
+            {
+                buffer* buf = buffer_manager::get_instance()->add_buffer(id);
+                if(buf)
+                {
+                    writer* wr = buf->add_writer();
+                    if(wr)
+                    {
+                        writers_.push_back(wr);
+
+                        int sz;
+                        r = val->conf_[i]->get("buf_size", sz);
+                        if(!r)
+                        {
+                            buf->resize(sz);
+                        }
+                    }
+                    jgb_assert(wr);
+                }
+                jgb_assert(buf);
+            }
+        }
+    }
+    return 0;
+}
+
+int task::init_io()
+{
+    init_io_readers();
+    init_io_writers();
+    return 0;
+}
+
+void task::release_io()
+{
+    // 关闭读者
+    for(auto rd: readers_)
+    {
+        buffer* buf = rd->buf_;
+        buf->remove_reader(rd);
+        buffer_manager::get_instance()->remove_buffer(buf);
+    }
+
+    // 关闭写者
+    for(auto wr: writers_)
+    {
+        buffer* buf = wr->buf_;
+        buf->remove_writer(wr);
+        buffer_manager::get_instance()->remove_buffer(buf);
     }
 }
 
