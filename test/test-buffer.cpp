@@ -110,6 +110,12 @@ static void test_02()
         //jgb_debug("{ i = %d }", i);
 
         wr_ctx.fill(data, 239);
+
+        uint8_t* x_buf;
+        r = wr->request_buffer(&x_buf, 239);
+        jgb_assert(!r);
+        wr->cancel();
+
         r = wr->put(data, 239);
         jgb_assert(!r);
 

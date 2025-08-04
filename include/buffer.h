@@ -53,6 +53,11 @@ public:
     // 释放已请求获取的数据。
     void release();
 
+    buffer* get_buffer()
+    {
+        return buf_;
+    }
+
 public:
     int64_t stat_bytes_read_;
     int64_t stat_frames_read_;
@@ -86,11 +91,21 @@ public:
     int request_buffer(uint8_t** buf, int len, int timeout = 100);
     // len 为载荷数据长度，单位字节; 0 表示取消。
     int commit(int len, int start_offset = 0);
+    // 提交全部。
+    int commit_all();
+    // 取消提交。
+    int cancel();
     int put(uint8_t* buf, int len, int timeout = 100);
+
+    buffer* get_buffer()
+    {
+        return buf_;
+    }
 
 public:
     int64_t stat_bytes_written_;
     int64_t stat_frames_written_;
+    int64_t stat_cancelled_;
     int64_t stat_timeout_;
 
     buffer* buf_;
@@ -136,6 +151,11 @@ public:
 
     int remove_reader(reader* r);
     int remove_writer(writer* w);
+
+    std::string id() const
+    {
+        return id_;
+    }
 
 public:
     std::string id_;

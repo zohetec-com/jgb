@@ -368,6 +368,8 @@ void reader::release()
 writer::writer(buffer* buf)
     : stat_bytes_written_(0L),
     stat_frames_written_(0L),
+    stat_cancelled_(0L),
+    stat_timeout_(0L),
     buf_(buf),
     cur_(buf->start_),
     ref_(0),
@@ -729,6 +731,16 @@ void writer::ack_readers()
     }
 }
 
+int writer::commit_all()
+{
+    return commit(reserved_len_);
+}
+
+int writer::cancel()
+{
+    return commit(0);
+}
+
 int writer::commit(int len, int start_offset)
 {
     boost::shared_lock<boost::shared_mutex> buf_lock(buf_->pimpl_->rw_mutex);
@@ -769,6 +781,7 @@ int writer::commit(int len, int start_offset)
         }
         else if(!len) // 取消提交
         {
+            ++ stat_cancelled_;
             reserved_len_ = 0;
             return 0;
         }

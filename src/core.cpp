@@ -164,6 +164,41 @@ std::string worker::get_thread_id()
     }
 }
 
+void worker::set_user(void* user)
+{
+    task_->instance_->user_ = user;
+}
+
+void* worker::get_user()
+{
+    return task_->instance_->user_;
+}
+
+config* worker::get_config()
+{
+    return task_->instance_->conf_;
+}
+
+reader* worker::get_reader(int index)
+{
+    if(index >=0 && index < (int) task_->readers_.size())
+    {
+        return task_->readers_[index];
+    }
+    jgb_warning("invalid reader index. { index = %d }", index);
+    return nullptr;
+}
+
+writer* worker::get_writer(int index)
+{
+    if(index >=0 && index < (int) task_->writers_.size())
+    {
+        return task_->writers_[index];
+    }
+    jgb_warning("invalid writer index. { index = %d }", index);
+    return nullptr;
+}
+
 task::task(instance *instance)
     : instance_(instance),
       run_(false),

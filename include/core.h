@@ -52,6 +52,14 @@ public:
     int start();
     int stop();
 
+    void set_user(void* user);
+    void* get_user();
+
+    config* get_config();
+
+    reader* get_reader(int index);
+    writer* get_writer(int index);
+
     std::string get_thread_id();
 
     int id_;
