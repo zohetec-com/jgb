@@ -1,6 +1,36 @@
 #include <jgb/core.h>
 #include <jgb/helper.h>
 #include <set>
+#include <jgb/log.h>
+#include "write_32u_context.h"
+#include "check_u32_context.h"
+
+class XA
+{
+public:
+    int x1_;
+
+    XA()
+    {
+        x1_ = 12345678;
+    }
+};
+
+struct SS
+{
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx[2];
+    XA x_xa;
+};
+
+static void test_constructor()
+{
+    struct SS* x_ss = new SS;
+    jgb_assert(x_ss->x_xa.x1_ == 12345678);
+    jgb_assert(x_ss->wr_ctx.serial_ == 0);
+    jgb_assert(x_ss->wr_ctx.pos_ == 0);
+    delete x_ss;
+}
 
 static void test_set_remove()
 {
@@ -13,21 +43,24 @@ static void test_set_remove()
     my_set.insert(ptr1);
     my_set.insert(ptr2);
     my_set.insert(ptr3);
-    // FIXME! -- ++ iterator after erased it!
-    // 没有任何报错。会引发段错误吗？
     for(auto i = my_set.begin(); i != my_set.end(); ++i)
     {
         if((*i) == ptr1)
         {
             jgb_debug("erase { %p }", *i);
             my_set.erase(i);
+            // 如果不 return：
+            // 1 ++ iterator after erased it!
+            // 2 导致未定义的行为！
+            // 3 可引发段错误。不一定会发生，但确实会发生。
+            return;
         }
     }
-    //jgb_assert(0);
 }
 
 static int init(void*)
 {
+    test_constructor();
     test_set_remove();
     return 0;
 }

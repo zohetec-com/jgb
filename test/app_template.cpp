@@ -5,12 +5,25 @@ static int init(void* conf)
 {
     jgb::config* c = (jgb::config*) conf;
     jgb_assert(c);
+    jgb_assert(jgb::app::get_app(c));
     return 0;
 }
 
 static void release(void*)
 {
     //jgb::config* c = (jgb::config*) conf;
+}
+
+static int create(void* conf)
+{
+    jgb::config* c = (jgb::config*) conf;
+    jgb_assert(c);
+    jgb_assert(jgb::instance::get_instance(c));
+    return 0;
+}
+
+static void destroy(void*)
+{
 }
 
 static int tsk_init(void* worker)
@@ -49,8 +62,8 @@ jgb_api_t template_app
     .desc = "template app",
     .init = init,
     .release = release,
-    .create = nullptr,
-    .destroy = nullptr,
+    .create = create,
+    .destroy = destroy,
     .commit = nullptr,
     .loop = &loop
 };

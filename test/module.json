@@ -1,7 +1,6 @@
 {
     "import":[
-        {"name": "template_app", "library": "libtemplate.so"},
-        {"name":["test_log",
+        {"name": ["test_log",
                 "test_cpp",
                 "test_core",
                 "test_config",
@@ -12,12 +11,14 @@
                 "test_setup_fail_multiple",
                 "test_loop_fail",
                 "test_run"],
-            "library":"jgb.build/test/libtest-core.so"},
-        {"name": ["test_core","test_run"],
-            "library":["libtest-core.so","libtest-core.so"]},
-        {"name":"test_core"},
+            "library": "jgb.build/test/libtest-core.so"},
+        {"name": ["test_core", "test_run"],
+            "library": ["libtest-core.so", "libtest-core.so"]},
+        {"name": "test_core"},
         {"name": ["test_core"]},
-        {"library":"libabc1.so"},
-        {"library":["libabc2.so","libabc3.so"]}
+        {"library": "libabc1.so"},
+        {"library": ["libabc2.so","libabc3.so"]},
+        {"name": "template_app", "library": "libtemplate.so"},
+        {"name": "service", "library": "libjgb-core.so"}
     ]
 }

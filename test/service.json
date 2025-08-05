@@ -1,0 +1,8 @@
+{
+	"instances":[
+		{
+			"subtask":["/template_app/instances[0]","/template_app/instances[1]"],
+			"auto":1
+		}
+	]
+}

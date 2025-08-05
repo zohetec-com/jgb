@@ -4,7 +4,9 @@
 #include "check_u32_context.h"
 #include "write_32u_context.h"
 
-struct context
+// C++ 不允许同名的 class/struct。
+// https://en.wikipedia.org/wiki/One_Definition_Rule
+struct context_33129dfc1a36
 {
     jgb::write_32u_context wr_ctx;
     jgb::check_u32_context chk_ctx[2];
@@ -13,7 +15,8 @@ struct context
 static int tsk_init(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    w->task_->instance_->user_ = new context;
+    context_33129dfc1a36* ctx = new context_33129dfc1a36;
+    w->task_->instance_->user_ = ctx;
     jgb_assert(w->task_->readers_.size() == 2);
     jgb_assert(w->task_->writers_.size() == 1);
     return 0;
@@ -22,7 +25,7 @@ static int tsk_init(void* worker)
 static int tsk_read(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    context* ctx = (context*) w->task_->instance_->user_;
+    context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->task_->instance_->user_;
     jgb::reader* rd = w->task_->readers_[w->id_];
     jgb::frame frm;
     int r;
@@ -41,7 +44,7 @@ static int tsk_read(void* worker)
 static int tsk_write(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    context* ctx = (context*) w->task_->instance_->user_;
+    context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->task_->instance_->user_;
     jgb::writer* wr = w->task_->writers_[0];
     int buf_size = wr->buf_->len_;
     int len = random() % (buf_size);
@@ -62,7 +65,7 @@ static int tsk_write(void* worker)
 static void tsk_exit(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    context* ctx = (context*) w->task_->instance_->user_;
+    context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->task_->instance_->user_;
     ctx->chk_ctx[0].dump();
     ctx->chk_ctx[1].dump();
     delete ctx;
