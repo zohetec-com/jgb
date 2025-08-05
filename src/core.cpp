@@ -543,13 +543,13 @@ instance::~instance()
 
 int instance::create()
 {
+    conf_->create(".instance", reinterpret_cast<intptr_t>(this));
     jgb_assert(app_);
     jgb_api_t* api_ = app_->api_;
     int r = 0;
     if(api_
             && api_->create)
     {
-        conf_->create(".instance", reinterpret_cast<intptr_t>(this));
         r = api_->create(conf_);
     }
     normal_ = !r;
@@ -648,9 +648,9 @@ int app::init()
                      api_->version, current_api_interface_version);
             return JGB_ERR_NOT_SUPPORT;
         }
+        conf_->create(".app", reinterpret_cast<intptr_t>(this));
         if(api_->init)
         {
-            conf_->create(".app", reinterpret_cast<intptr_t>(this));
             int r = api_->init(conf_);
             if(r)
             {
