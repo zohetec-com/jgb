@@ -51,6 +51,7 @@ struct core_worker
         jgb_assert(w->task_->instance_->app_);
         jgb_assert(w->task_->instance_->app_->api_);
         jgb_assert(w->task_->instance_->app_->api_->loop);
+        jgb_assert(w->task_->instance_->app_->api_->loop->loops);
         jgb_assert(w->task_->instance_->app_->api_->loop->loops[w->id_]);
 
         int r;
@@ -112,7 +113,7 @@ worker::worker(int id, task* task)
       task_(task),
       run_(false),
       exited_(false),
-      normal_(false),
+      normal_(true),
       pimpl_(new Impl())
 {
 }
@@ -212,10 +213,13 @@ task::task(instance *instance)
             && app->api_->loop)
     {
         jgb_loop_t* loop = app->api_->loop;
-        for(int i=0; loop->loops[i]; i++)
+        if(loop->loops)
         {
-            jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
-            workers_.push_back(worker(i, this));
+            for(int i=0; loop->loops[i]; i++)
+            {
+                jgb_debug("add worker. { app.name = %s, id = %d }", app->name_.c_str(), i);
+                workers_.push_back(worker(i, this));
+            }
         }
     }
 }
@@ -521,7 +525,7 @@ void instance::unlock()
 instance::instance(int id, app* app, config* conf)
     : app_(app),
       conf_(conf),
-      normal_(false),
+      normal_(true),
       id_(id),
       user_(nullptr),
       pimpl_(new Impl())
@@ -545,6 +549,7 @@ int instance::create()
     if(api_
             && api_->create)
     {
+        conf_->create(".instance", reinterpret_cast<intptr_t>(this));
         r = api_->create(conf_);
     }
     normal_ = !r;
@@ -579,6 +584,16 @@ int instance::stop()
         return JGB_ERR_DENIED;
     }
     return task_->stop();
+}
+
+void instance::set_user(void* user)
+{
+    user_ = user;
+}
+
+void* instance::get_user()
+{
+    return user_;
 }
 
 void app::create_instances()
@@ -635,6 +650,7 @@ int app::init()
         }
         if(api_->init)
         {
+            conf_->create(".app", reinterpret_cast<intptr_t>(this));
             int r = api_->init(conf_);
             if(r)
             {
@@ -674,6 +690,30 @@ void app::release()
     {
         api_->release(conf_);
     }
+}
+
+app* app::get_app(config* conf)
+{
+    int64_t int_ptr;
+    int r;
+    r = conf->get(".app", int_ptr);
+    if(!r)
+    {
+        return reinterpret_cast<app*>(int_ptr);
+    }
+    return nullptr;
+}
+
+instance* instance::get_instance(config* conf)
+{
+    int64_t int_ptr;
+    int r;
+    r = conf->get(".instance", int_ptr);
+    if(!r)
+    {
+        return reinterpret_cast<instance*>(int_ptr);
+    }
+    return nullptr;
 }
 
 core::core()

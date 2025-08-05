@@ -122,6 +122,9 @@ public:
     void lock();
     void unlock();
 
+    void set_user(void* user);
+    void* get_user();
+
     app* app_;
     config* conf_;
     bool normal_;
@@ -130,6 +133,8 @@ public:
     int id_;
     // 用户数据
     void* user_;
+
+    static instance* get_instance(config* conf);
 
 private:
     struct Impl;
@@ -153,6 +158,7 @@ public:
 
     // 当前使用的应用接口的版本。
     static const int current_api_interface_version = CURRENT_API_VERSION();
+    static app* get_app(config* conf);
 
 private:
     void create_instances();
