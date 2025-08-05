@@ -259,7 +259,7 @@ int value::get(const char* path, value** val, int* idx)
             }
             else
             {
-                jgb_debug("{ s = %s, idx = %d }", s, idx);
+                jgb_debug("not found. { s = %s }", s);
                 return JGB_ERR_NOT_FOUND;
             }
         }
