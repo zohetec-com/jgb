@@ -32,6 +32,8 @@
 
 #define LOG_BUF_SIZE 2048
 
+static struct timespec uptime;
+
 static const char* log_level_name [] =
 {
     "E:",
@@ -68,6 +70,18 @@ static void to_stderr(int level, const char *line)
     else
     {
         fprintf(stderr, "%s", line);
+    }
+}
+
+static void timespecsub(struct timespec *a, struct timespec *b, struct timespec *res)
+{
+    res->tv_nsec = a->tv_nsec - b->tv_nsec;
+    res->tv_sec = a->tv_sec - b->tv_sec;
+
+    // Handle borrowing if nanoseconds become negative
+    if (res->tv_nsec < 0) {
+        res->tv_sec--; // Decrement seconds
+        res->tv_nsec += 1000000000; // Add 1 second (1,000,000,000 nanoseconds) to nanoseconds
     }
 }
 
@@ -126,6 +140,25 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
         }
     }
 
+    struct timespec now;
+    struct timespec elapse;
+
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    timespecsub(&now, &uptime, &elapse);
+
+    long days = elapse.tv_sec / (24 * 3600);
+    long hours = (elapse.tv_sec % (24 * 3600)) / 3600;
+    long minutes = (elapse.tv_sec % 3600) / 60;
+    long seconds = elapse.tv_sec % 60;
+    n = snprintf(buf + off, len,
+                 "[%ldd %02ld:%02ld:%02ld.%06ld]",
+                 days, hours, minutes, seconds, elapse.tv_nsec / 1000);
+    if(n > 0)
+    {
+        off += n;
+        len -= n;
+    }
+
     pid_t tid = gettid();
     n = snprintf(buf + off, len, "[%6d]", tid);
     if(n > 0)
@@ -181,4 +214,9 @@ void jgb_dump(void* buf, int len)
         jgb_raw("%02x ", *(((uint8_t*)buf)+i));
     }
     jgb_raw("\n");
+}
+
+void jgb_log_init()
+{
+    clock_gettime(CLOCK_MONOTONIC, &uptime);
 }

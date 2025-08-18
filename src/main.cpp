@@ -45,6 +45,7 @@ static void handler(int signum)
 
 int main(int argc, char *argv[])
 {
+    jgb_log_init();
     jgb_info("jgb start.");
 
     int c;
