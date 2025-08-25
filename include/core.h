@@ -134,6 +134,7 @@ public:
     // 用户数据
     void* user_;
 
+    // 从配置反查实例对象。
     static instance* get_instance(config* conf);
 
 private:
@@ -158,7 +159,10 @@ public:
 
     // 当前使用的应用接口的版本。
     static const int current_api_interface_version = CURRENT_API_VERSION();
+    // 从配置反查应用对象。
     static app* get_app(config* conf);
+    // 查询应用配置所包含的实例配置的数量。
+    int get_instance_count();
 
 private:
     void create_instances();

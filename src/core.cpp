@@ -704,6 +704,11 @@ app* app::get_app(config* conf)
     return nullptr;
 }
 
+int app::get_instance_count()
+{
+    return (int) instances_.size();
+}
+
 instance* instance::get_instance(config* conf)
 {
     int64_t int_ptr;
