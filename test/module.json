@@ -4,7 +4,6 @@
                 "test_cpp",
                 "test_core",
                 "test_config",
-                "test_task_buffer",
                 "test_buffer",
                 "test_single_worker",
                 "test_setup_fail",
@@ -18,7 +17,8 @@
         {"name": ["test_core"]},
         {"library": "libabc1.so"},
         {"library": ["libabc2.so","libabc3.so"]},
-        {"name": "template_app", "library": "libtemplate.so"},
+        {"name": "test_task_buffer", "library": "jgb.build/test/libtest-core.so"},
+        {"name": "template_app", "library": "jgb.build/test/libtemplate.so"},
         {"name": "service", "library": "libjgb-core.so"}
     ]
 }

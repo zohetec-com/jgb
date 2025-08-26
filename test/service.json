@@ -1,7 +1,11 @@
 {
 	"instances":[
 		{
-			"subtask":["/template_app/instances[0]","/template_app/instances[1]"],
+                        "subtask":[
+                            "/template_app/instances[0]",
+                            "/template_app/instances[1]",
+                            "/test_task_buffer/instances[0]",
+                            "/test_task_buffer/instances[1]"],
 			"auto":1
 		}
 	]

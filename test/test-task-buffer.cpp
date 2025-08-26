@@ -55,8 +55,15 @@ static int tsk_write(void* worker)
         r = wr->request_buffer(&x_buf, len);
         if(!r)
         {
-            ctx->wr_ctx.fill(x_buf, len);
-            wr->commit(len);
+            if(len % 20)
+            {
+                ctx->wr_ctx.fill(x_buf, len);
+                wr->commit(len);
+            }
+            else
+            {
+                wr->cancel();
+            }
         }
     }
     return 0;
