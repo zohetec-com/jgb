@@ -65,6 +65,7 @@ public:
     int get(const char* path, value** val, int* idx=nullptr);
 
     int get(bool& bval, int idx = 0);
+    int get(int16_t& sival, int idx = 0);
     int get(int& ival, int idx = 0);
     int get(int64_t& lval, int idx = 0);
     int get(double& rval, int idx = 0);
@@ -177,6 +178,7 @@ public:
 
     int get(const char* path, value** val, int* idx = nullptr);
     int get(const char* path, bool& bval);
+    int get(const char* path, int16_t& sival);
     int get(const char* path, int& ival);
     int get(const char* path, int64_t& lval);
     int get(const char* path, double& rval);

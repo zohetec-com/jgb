@@ -328,6 +328,17 @@ int value::get(bool& bval, int idx)
     return r;
 }
 
+int value::get(int16_t& sival, int idx)
+{
+    int64_t lval;
+    int r = get(lval, idx);
+    if(!r)
+    {
+        sival = lval;
+    }
+    return r;
+}
+
 int value::get(int& ival, int idx)
 {
     int64_t lval;
@@ -1166,6 +1177,20 @@ int config::get(const char* path, bool& bval)
     {
         jgb_assert(pval);
         return pval->get(bval, idx);
+    }
+    return r;
+}
+
+int config::get(const char* path, int16_t& sival)
+{
+    int r;
+    int idx;
+    value* pval;
+    r = get(path, &pval, &idx);
+    if(!r)
+    {
+        jgb_assert(pval);
+        return pval->get(sival, idx);
     }
     return r;
 }
