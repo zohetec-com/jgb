@@ -283,7 +283,9 @@ int reader::request_frame_internal(struct frame* frm, int timeout)
     jgb_assert(stored_ > 0);
 
     struct frame_header* hdr = reinterpret_cast<struct frame_header*>(cur_);
-    //jgb_debug("{ hdr->serial = %d, serial_ = %d }", hdr->serial, serial_);
+    //jgb_debug("{ buf %p reader %p cur %p hdr.serial = %d, hdr.len = %d, serial_ = %d, stored_ = %d, read_ %ld }",
+    //          buf_, this, cur_,
+    //          hdr->serial, hdr->len, serial_, stored_, stat_frames_read_);
     jgb_assert(hdr->serial == serial_);
     if(!hdr->len)
     {
@@ -668,13 +670,15 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
                 {
                     // 填写重定向帧
                     struct frame_header* hdr = reinterpret_cast<struct frame_header*>(cur_);
-                    hdr->serial = buf_->serial_ ++;
+                    hdr->serial = buf_->serial_;
                     hdr->len = 0;
                     hdr->start_offset = 0;
                     hdr->unused = 0;
 
                     // TODO：此时需要通知读者吗？
                     ack_readers();
+                    ++ buf_->serial_;
+                    //jgb_debug("buf_ %p, writer %p, cur %p, 重定向帧", buf_, this, cur_);
                 }
 
                 cur_ = buf_->start_;
@@ -761,11 +765,14 @@ int writer::commit(int len, int start_offset)
 
             // 通知所有读者有新写入帧。
             ack_readers();
+            //jgb_debug("{ buf %p, writer %p, cur %p, len = %d, commit %ld, reader num %u }",
+            //          buf_, this, cur_,
+            //          len, stat_frames_written_, buf_->readers_.size());
 
             // 因为 ack_readers() 引用 buf_->serial_，所以在 ack_readers() 返回后再更新 buf_->serial。
             ++ buf_->serial_;
 
-            cur_ += reserved_len_;
+            cur_ += hdr->total_len();
             jgb_assert(cur_ <= buf_->end_);
             if(cur_ + sizeof(struct frame_header) > buf_->end_)
             {

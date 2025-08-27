@@ -263,8 +263,40 @@ static void test_check_u32()
     chk_ctx.dump();
 }
 
+static void test_04()
+{
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
+    jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#04");
+    jgb::writer* wr = buf->add_writer();
+    jgb::reader* rd = buf->add_reader();
+    buf->resize(10240);
+    for(int i=0; i<1000; i++)
+    {
+        int len = random() % 256;
+        uint8_t* p;
+        int r = wr->request_buffer(&p, 256);
+        if(!r)
+        {
+            wr_ctx.fill(p, len);
+            r = wr->commit(len);
+            jgb_assert(!r);
+        }
+
+        struct jgb::frame frm;
+        r = rd->request_frame(&frm);
+        if(!r)
+        {
+            jgb_assert(frm.start_offset == 0);
+            jgb_assert(!chk_ctx.check(frm.buf, frm.len));
+            rd->release();
+        }
+    }
+}
+
 static int init(void*)
 {
+    test_04();
     test_check_u32();
     test_03();
     test_02();
