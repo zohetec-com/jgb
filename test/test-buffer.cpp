@@ -292,10 +292,38 @@ static void test_04()
             rd->release();
         }
     }
+    buf->remove_writer(wr);
+    buf->remove_reader(rd);
+    jgb::buffer_manager::get_instance()->remove_buffer(buf);
+}
+
+// 多个写者
+static void test_05()
+{
+    jgb::write_32u_context wr_ctx;
+    jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#05");
+    jgb::writer* wr0 = buf->add_writer();
+    jgb::writer* wr1 = buf->add_writer();
+    int r;
+    uint8_t* p;
+
+    buf->resize(10240);
+    r = wr0->request_buffer(&p, 1024);
+    jgb_assert(!r);
+    r = wr1->request_buffer(&p, 1024, 1000);
+    jgb_assert(r == JGB_ERR_TIMEOUT);
+    r = wr1->commit_all();
+    jgb_assert(r == JGB_ERR_INVALID);
+    r = wr0->commit_all();
+    jgb_assert(!r);
+    buf->remove_writer(wr0);
+    buf->remove_writer(wr1);
+    jgb::buffer_manager::get_instance()->remove_buffer(buf);
 }
 
 static int init(void*)
 {
+    test_05();
     test_04();
     test_check_u32();
     test_03();

@@ -45,12 +45,16 @@ struct __attribute__((packed)) frame_header
 
 struct buffer::Impl
 {
+    // rw_mutex 用于保护 readers_、writers_。
     boost::shared_mutex rw_mutex;
+    boost::mutex owner_mutex;
+    boost::condition_variable owner_cond;
 };
 
 struct writer::Impl
 {
-    boost::shared_mutex rw_mutex;
+    // 不支持多线程使用同一个 writer。-- 没有需求场景。
+    //boost::shared_mutex rw_mutex;
 };
 
 buffer::buffer(const std::string& id)
@@ -58,9 +62,9 @@ buffer::buffer(const std::string& id)
     len_(0),
     start_(nullptr),
     end_(nullptr),
-    writers_(nullptr),
     ref_(0),
     serial_(0),
+    owner_(nullptr),
     pimpl_(new Impl())
 {
 }
@@ -102,11 +106,9 @@ int buffer::resize(int len)
     end_ = start_ + len;
     len_ = len;
 
-    if(writers_)
+    for(auto w : writers_)
     {
-        // TODO: 有必要获得锁吗？
-        boost::unique_lock<boost::shared_mutex> wr_lock(writers_->pimpl_->rw_mutex);
-        writers_->cur_ = start_;
+        w->cur_ = start_;
     }
 
     jgb_ok("buf resized. { id = %s, size = %d }", id_.c_str(), len_);
@@ -122,21 +124,12 @@ reader* buffer::add_reader()
     return rd;
 }
 
-// TODO: 处理多写者。
-// get_buffer() 结果只能归属于一个写者，不能被多个写者共享。
 writer* buffer::add_writer()
 {
     boost::unique_lock<boost::shared_mutex> lock(pimpl_->rw_mutex);
-    if(!writers_)
-    {
-        writers_ = new writer(this);
-        writers_->ref_ = 1;
-    }
-    else
-    {
-        ++ writers_->ref_;
-    }
-    return writers_;
+    writer* wr = new writer(this);
+    writers_.push_back(wr);
+    return wr;
 }
 
 int buffer::remove_reader(reader* r)
@@ -158,16 +151,15 @@ int buffer::remove_reader(reader* r)
 int buffer::remove_writer(writer* w)
 {
     boost::unique_lock<boost::shared_mutex> lock(pimpl_->rw_mutex);
-    if(writers_ == w)
+    for(auto it = writers_.begin(); it != writers_.end(); ++it)
     {
-        jgb_assert(writers_->ref_ > 0);
-        -- writers_->ref_;
-        if(writers_->ref_ <= 0)
+        if(*it == w)
         {
-            delete writers_;
-            writers_ = nullptr;
+            jgb_assert((*it)->buf_ == this);
+            delete *it;
+            writers_.erase(it);
+            return 0;
         }
-        return 0; // 成功
     }
     return -1; // 写者未找到
 }
@@ -603,6 +595,44 @@ int writer::wait_readers_scenario_3(int timeout)
     return 0;
 }
 
+int writer::acquire_buffer_ownership(int timeout)
+{
+    boost::unique_lock<boost::mutex> owner_lock(buf_->pimpl_->owner_mutex);
+    if(!buf_->owner_)
+    {
+        buf_->owner_ = this;
+    }
+    else if(buf_->owner_ != this)
+    {
+        if(buf_->pimpl_->owner_cond.wait_for(owner_lock, boost::chrono::milliseconds(timeout),
+                                              [this](){ return buf_->owner_ == nullptr; }))
+        {
+            buf_->owner_ = this;
+        }
+        else
+        {
+            ++ stat_timeout_;
+            return JGB_ERR_TIMEOUT; // 超时
+        }
+    }
+    jgb_assert(buf_->owner_ == this);
+    return 0;
+}
+
+bool writer::check_buffer_ownership()
+{
+    boost::unique_lock<boost::mutex> owner_lock(buf_->pimpl_->owner_mutex);
+    return buf_->owner_ == this;
+}
+
+void writer::release_buffer_ownership()
+{
+    boost::unique_lock<boost::mutex> owner_lock(buf_->pimpl_->owner_mutex);
+    jgb_assert(buf_->owner_ == this);
+    buf_->owner_ = nullptr;
+    buf_->pimpl_->owner_cond.notify_one();
+}
+
 int writer::request_buffer(uint8_t** buf, int len, int timeout)
 {
     int frame_len = JGB_ALIGN(len, 4) + sizeof(struct frame_header);
@@ -640,7 +670,11 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
     }
 
     boost::shared_lock<boost::shared_mutex> buf_lock(buf_->pimpl_->rw_mutex);
-    boost::unique_lock<boost::shared_mutex> wr_lock(pimpl_->rw_mutex);
+    r = acquire_buffer_ownership(timeout);
+    if(r)
+    {
+        return r;
+    }
 
     next = cur_ + frame_len;
     reserved_len_ = frame_len;
@@ -655,6 +689,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
             return 0;
         }
         reserved_len_ = 0;
+        release_buffer_ownership();
         return r;
     }
     else
@@ -687,6 +722,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
                 return 0;
             }
             reserved_len_ = 0;
+            release_buffer_ownership();
             return r;
         }
         // 场景3：从缓冲区开始的空间足以容纳新帧，但超过了写指针。
@@ -707,6 +743,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
                 return 0;
             }
             reserved_len_ = 0;
+            release_buffer_ownership();
             return r;
         }
     }
@@ -737,7 +774,7 @@ void writer::ack_readers()
 
 int writer::commit_all()
 {
-    return commit(reserved_len_);
+    return commit(requested_len_);
 }
 
 int writer::cancel()
@@ -748,9 +785,13 @@ int writer::cancel()
 int writer::commit(int len, int start_offset)
 {
     boost::shared_lock<boost::shared_mutex> buf_lock(buf_->pimpl_->rw_mutex);
-    boost::unique_lock<boost::shared_mutex> wr_lock(pimpl_->rw_mutex);
     if(reserved_len_ > 0)
     {
+        if(!check_buffer_ownership())
+        {
+            return JGB_ERR_INVALID;
+        }
+
         if(len > 0
             && start_offset >= 0
             && len + start_offset <= requested_len_)
@@ -779,17 +820,22 @@ int writer::commit(int len, int start_offset)
                 //jgb_debug("writer return");
                 cur_ = buf_->start_;
             }
-            reserved_len_ = 0;
 
             ++ stat_frames_written_;
             stat_bytes_written_ += len;
+
+            reserved_len_ = 0;
+            release_buffer_ownership();
 
             return 0; // 成功
         }
         else if(!len) // 取消提交
         {
             ++ stat_cancelled_;
+
             reserved_len_ = 0;
+            release_buffer_ownership();
+
             return 0;
         }
         else

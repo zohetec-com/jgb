@@ -133,6 +133,11 @@ private:
     void ack_readers();
     void ack_reader(reader* rd);
 
+    // 尝试成为缓冲区的 owner。
+    int acquire_buffer_ownership(int timeout);
+    void release_buffer_ownership();
+    bool check_buffer_ownership();
+
 public:
     struct Impl;
     std::unique_ptr<Impl> pimpl_;
@@ -165,12 +170,15 @@ public:
     uint8_t* end_;
 
     std::list<reader*> readers_;
-    writer* writers_;
+    std::list<writer*> writers_;
 
     int ref_;
 
     // 考虑：如果写者关闭，又打开。
     uint32_t serial_;
+
+    // 用于实现串行化写入：同一时段只能有一个 writer 可以写入。
+    writer* owner_;
 
 public:
     struct Impl;
