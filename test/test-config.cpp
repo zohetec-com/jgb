@@ -1262,10 +1262,30 @@ static void test_bind()
     delete c;
 }
 
+static void test_new_conf()
+{
+#if 0 // 错误用法，c1 析构函数会删除 c2，但 c2 在栈空间。
+    jgb::config c1;
+    jgb::config c2;
+    c1.create("c", &c2);
+#else // 正确的。
+    jgb::config c1;
+    jgb::config* c2;
+    c1.create("c2", new jgb::config);
+    c1.get("c2", &c2);
+    c2->create("place", "大溪畔");
+
+    jgb::config* c3 = new jgb::config;
+    c3->create("place", "学校前");
+    c1.create("c3", c3);
+#endif
+}
+
 static int init(void*)
 {
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
+    test_new_conf();
 
     test_conf_2();
     test_bind();
