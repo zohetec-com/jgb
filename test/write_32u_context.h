@@ -43,7 +43,9 @@ public:
 
     write_32u_context()
     : serial_(0),
-        pos_(0)
+        pos_(0),
+        stat_write_frames_(0L),
+        stat_write_bytes_(0L)
     {
     }
 
@@ -68,8 +70,20 @@ public:
                     ++ serial_;
                 }
             }
+            ++ stat_write_frames_;
+            stat_write_bytes_ += len;
         }
     }
+
+    void dump()
+    {
+        jgb_raw("write_32u_context: %p\n", this);
+        jgb_raw("stat_write_frames_ = %lld\n", stat_write_frames_);
+        jgb_raw("stat_write_bytes_ = %lld\n", stat_write_bytes_);
+    }
+
+    int64_t stat_write_frames_;
+    int64_t stat_write_bytes_;
 };
 
 } // namespace jgb

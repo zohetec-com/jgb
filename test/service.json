@@ -4,9 +4,20 @@
                         "subtask":[
                             "/template_app/instances[0]",
                             "/template_app/instances[1]",
-                            "/test_task_buffer/instances[0]",
-                            "/test_task_buffer/instances[1]"],
+                            "/read_buffer/instances[0]",
+                            "/read_buffer/instances[1]",
+                            "/read_buffer/instances[2]",
+                            "/read_buffer/instances[3]",
+                            "/read_buffer/instances[4]",
+                            "/read_buffer/instances[5]",
+                            "/read_buffer/instances[5]",
+                            "/read_buffer/instances[6]",
+                            "/write_buffer/instances[0]",
+                            "/write_buffer/instances[1]",
+                            "/write_buffer/instances[2]",
+                            "/write_buffer/instances[3]"],
 			"auto":1
 		}
 	]
 }
+

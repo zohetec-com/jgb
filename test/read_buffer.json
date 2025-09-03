@@ -1,0 +1,61 @@
+{
+  "instances": [
+    {
+    "check": false,
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#3"
+        }
+      ]
+    }},
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#2"
+        }
+      ]
+    }},
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#2"
+        }
+      ]
+    }},
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#1"
+        }
+      ]
+    }},
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#1"
+        }
+      ]
+    }},
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#1"
+        }
+      ]
+    }},
+    {
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#1"
+        }
+      ]
+    }}
+  ]
+}

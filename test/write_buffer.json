@@ -2,14 +2,6 @@
   "instances": [
     {
     "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#2"
-        },
-        {
-          "buf_id": "VENC#2"
-        }
-      ],
       "writers": [
         {
           "buf_id": "VENC#1",
@@ -19,18 +11,27 @@
     }},
     {
     "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#1"
-        },
-        {
-          "buf_id": "VENC#1"
-        }
-      ],
       "writers": [
         {
           "buf_id": "VENC#2",
           "buf_size": 1048576
+        }
+      ]
+    }},
+    {
+    "task":{
+      "writers": [
+        {
+          "buf_id": "VENC#3",
+          "buf_size": 1048576
+        }
+      ]
+    }},
+    {
+    "task":{
+      "writers": [
+        {
+          "buf_id": "VENC#3"
         }
       ]
     }}

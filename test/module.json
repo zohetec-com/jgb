@@ -17,7 +17,7 @@
         {"name": ["test_core"]},
         {"library": "libabc1.so"},
         {"library": ["libabc2.so","libabc3.so"]},
-        {"name": "test_task_buffer", "library": "jgb.build/test/libtest-core.so"},
+        {"name": ["write_buffer","read_buffer"], "library": "jgb.build/test/libtest-core.so"},
         {"name": "template_app", "library": "jgb.build/test/libtemplate.so"},
         {"name": "service", "library": "libjgb-core.so"}
     ]

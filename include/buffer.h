@@ -109,10 +109,6 @@ public:
     int64_t stat_timeout_;
 
     buffer* buf_;
-    // 写指针。
-    uint8_t* cur_;
-    // 对应一个缓冲区对象，只有一个 writer 对象。
-    int ref_;
     // 所请求的长度。
     int requested_len_;
     // 保留的长度：包括帧头、载荷、填充。
@@ -179,6 +175,8 @@ public:
 
     // 用于实现串行化写入：同一时段只能有一个 writer 可以写入。
     writer* owner_;
+    // 写指针。
+    uint8_t* cur_;
 
 public:
     struct Impl;

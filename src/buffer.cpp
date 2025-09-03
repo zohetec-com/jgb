@@ -106,10 +106,7 @@ int buffer::resize(int len)
     end_ = start_ + len;
     len_ = len;
 
-    for(auto w : writers_)
-    {
-        w->cur_ = start_;
-    }
+    cur_ = start_;
 
     jgb_ok("buf resized. { id = %s, size = %d }", id_.c_str(), len_);
 
@@ -365,8 +362,6 @@ writer::writer(buffer* buf)
     stat_cancelled_(0L),
     stat_timeout_(0L),
     buf_(buf),
-    cur_(buf->start_),
-    ref_(0),
     requested_len_(0),
     reserved_len_(0),
     pimpl_(new Impl())
@@ -394,12 +389,12 @@ int writer::wait_reader_scenario_1(reader* rd, int timeout)
     boost::unique_lock<boost::mutex> rd_lock(rd->pimpl_->mutex);
     uint8_t* next;
     int r;
-    next = cur_ + reserved_len_;
+    next = buf_->cur_ + reserved_len_;
     while(true)
     {
         if(rd->cur_)
         {
-            if(cur_ < rd->cur_)
+            if(buf_->cur_ < rd->cur_)
             {
                 if(next <= rd->cur_)
                 {
@@ -414,7 +409,7 @@ int writer::wait_reader_scenario_1(reader* rd, int timeout)
                     }
                 }
             }
-            else if(cur_ > rd->cur_)
+            else if(buf_->cur_ > rd->cur_)
             {
                 return 0;
             }
@@ -468,7 +463,7 @@ int writer::wait_reader_scenario_2(reader* rd, int timeout)
     {
         if(rd->cur_)
         {
-            if(cur_ < rd->cur_)
+            if(buf_->cur_ < rd->cur_)
             {
                 r = wait_reader_release(this, rd_lock, rd, timeout);
                 if(r)
@@ -476,7 +471,7 @@ int writer::wait_reader_scenario_2(reader* rd, int timeout)
                     return r;
                 }
             }
-            else if(cur_ > rd->cur_)
+            else if(buf_->cur_ > rd->cur_)
             {
                 if(next <= rd->cur_)
                 {
@@ -539,7 +534,7 @@ int writer::wait_reader_scenario_3(reader* rd, int timeout)
     {
         if(rd->cur_)
         {
-            if(cur_ < rd->cur_)
+            if(buf_->cur_ < rd->cur_)
             {
                 r = wait_reader_release(this, rd_lock, rd, timeout);
                 if(r)
@@ -547,7 +542,7 @@ int writer::wait_reader_scenario_3(reader* rd, int timeout)
                     return r;
                 }
             }
-            else if(cur_ > rd->cur_)
+            else if(buf_->cur_ > rd->cur_)
             {
                 r = wait_reader_release(this, rd_lock, rd, timeout);
                 if(r)
@@ -654,12 +649,13 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
     // 在提交已申请的缓冲区之前重复请求分配缓冲区。
     if(reserved_len_ > 0)
     {
-        jgb_warning("存在未提交的已分配的缓冲区。 { reserved_len_ = %d }", reserved_len_);
+        jgb_warning("存在未提交的已分配的缓冲区。 { buf id = %s, reserved_len_ = %d, writer = %p }",
+                    buf_->id().c_str(), reserved_len_, this);
         return JGB_ERR_DENIED;
     }
 
     // 写者尚未完成初始化。
-    if(!cur_)
+    if(!buf_->cur_)
     {
         return JGB_ERR_FAIL;
     }
@@ -676,7 +672,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
         return r;
     }
 
-    next = cur_ + frame_len;
+    next = buf_->cur_ + frame_len;
     reserved_len_ = frame_len;
     // 场景1：从写指针到缓冲区末尾的空间足以容纳新帧。
     if(next <= buf_->end_)
@@ -684,7 +680,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
         r = wait_readers_scenario_1(timeout);
         if(!r)
         {
-            *buf = cur_ + sizeof(struct frame_header);
+            *buf = buf_->cur_ + sizeof(struct frame_header);
             requested_len_ = len;
             return 0;
         }
@@ -696,15 +692,15 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
     {
         next = buf_->start_ + frame_len;
         // 场景2：从缓冲区开始到写指针的空间足以容纳新帧。
-        if(next <= cur_)
+        if(next <= buf_->cur_)
         {
             r = wait_readers_scenario_2(timeout);
             if(!r)
             {
-                if(cur_ + sizeof(struct frame_header) <= buf_->end_)
+                if(buf_->cur_ + sizeof(struct frame_header) <= buf_->end_)
                 {
                     // 填写重定向帧
-                    struct frame_header* hdr = reinterpret_cast<struct frame_header*>(cur_);
+                    struct frame_header* hdr = reinterpret_cast<struct frame_header*>(buf_->cur_);
                     hdr->serial = buf_->serial_;
                     hdr->len = 0;
                     hdr->start_offset = 0;
@@ -716,8 +712,8 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
                     //jgb_debug("buf_ %p, writer %p, cur %p, 重定向帧", buf_, this, cur_);
                 }
 
-                cur_ = buf_->start_;
-                *buf = cur_ + sizeof(struct frame_header);
+                buf_->cur_ = buf_->start_;
+                *buf = buf_->cur_ + sizeof(struct frame_header);
                 requested_len_ = len;
                 return 0;
             }
@@ -737,8 +733,8 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
                     reader->cur_ = buf_->start_;
                 }
 
-                cur_ = buf_->start_;
-                *buf = cur_ + sizeof(struct frame_header);
+                buf_->cur_ = buf_->start_;
+                *buf = buf_->cur_ + sizeof(struct frame_header);
                 requested_len_ = len;
                 return 0;
             }
@@ -755,7 +751,7 @@ void writer::ack_reader(reader* rd)
     if(!rd->cur_)
     {
         jgb_assert(!rd->stored_);
-        rd->cur_ = cur_;
+        rd->cur_ = buf_->cur_;
         rd->serial_ = buf_->serial_;
     }
     ++ rd->stored_;
@@ -798,7 +794,7 @@ int writer::commit(int len, int start_offset)
         {
             //jgb_debug("serial = %d", buf_->serial_);
 
-            struct frame_header* hdr = reinterpret_cast<struct frame_header*>(cur_);
+            struct frame_header* hdr = reinterpret_cast<struct frame_header*>(buf_->cur_);
             hdr->serial = buf_->serial_;
             hdr->len = len;
             hdr->start_offset = start_offset;
@@ -806,19 +802,19 @@ int writer::commit(int len, int start_offset)
 
             // 通知所有读者有新写入帧。
             ack_readers();
-            //jgb_debug("{ buf %p, writer %p, cur %p, len = %d, commit %ld, reader num %u }",
-            //          buf_, this, cur_,
+            //jgb_debug("{ buf %p, writer %p, cur %p, serial = %d, len = %d, commit %ld, reader num %u }",
+            //          buf_, this, buf_->cur_, buf_->serial_,
             //          len, stat_frames_written_, buf_->readers_.size());
 
             // 因为 ack_readers() 引用 buf_->serial_，所以在 ack_readers() 返回后再更新 buf_->serial。
             ++ buf_->serial_;
 
-            cur_ += hdr->total_len();
-            jgb_assert(cur_ <= buf_->end_);
-            if(cur_ + sizeof(struct frame_header) > buf_->end_)
+            buf_->cur_ += hdr->total_len();
+            jgb_assert(buf_->cur_ <= buf_->end_);
+            if(buf_->cur_ + sizeof(struct frame_header) > buf_->end_)
             {
                 //jgb_debug("writer return");
-                cur_ = buf_->start_;
+                buf_->cur_ = buf_->start_;
             }
 
             ++ stat_frames_written_;

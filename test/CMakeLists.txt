@@ -6,7 +6,8 @@ add_library(test-core SHARED
     test-setup-fail-multiple.cpp
     test-loop-fail.cpp
     test-buffer.cpp
-    test-task-buffer.cpp
+    test-task-read-buffer.cpp
+    test-task-write-buffer.cpp
     test-cpp.cpp
     test-run.cpp
     test-log.cpp)

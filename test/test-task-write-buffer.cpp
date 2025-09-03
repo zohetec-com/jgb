@@ -1,51 +1,29 @@
 #include <jgb/core.h>
 #include <jgb/helper.h>
 #include <jgb/buffer.h>
-#include "check_u32_context.h"
 #include "write_32u_context.h"
 
 // C++ 不允许同名的 class/struct。
 // https://en.wikipedia.org/wiki/One_Definition_Rule
-struct context_33129dfc1a36
+struct context_331c5b56c71b
 {
     jgb::write_32u_context wr_ctx;
-    jgb::check_u32_context chk_ctx[2];
 };
 
 static int tsk_init(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    context_33129dfc1a36* ctx = new context_33129dfc1a36;
+    context_331c5b56c71b* ctx = new context_331c5b56c71b;
     w->task_->instance_->user_ = ctx;
-    jgb_assert(w->task_->readers_.size() == 2);
-    jgb_assert(w->task_->writers_.size() == 1);
-    return 0;
-}
-
-static int tsk_read(void* worker)
-{
-    jgb::worker* w = (jgb::worker*) worker;
-    context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->task_->instance_->user_;
-    jgb::reader* rd = w->task_->readers_[w->id_];
-    jgb::frame frm;
-    int r;
-    r = rd->request_frame(&frm);
-    if(!r)
-    {
-        jgb_assert(frm.buf);
-        jgb_assert(frm.len > 0);
-        jgb_assert(frm.start_offset == 0);
-        jgb_assert(!ctx->chk_ctx[w->id_].check(frm.buf, frm.len));
-        rd->release();
-    }
+    jgb_assert(w->get_writer(0));
     return 0;
 }
 
 static int tsk_write(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->task_->instance_->user_;
-    jgb::writer* wr = w->task_->writers_[0];
+    context_331c5b56c71b* ctx = (context_331c5b56c71b*) w->task_->instance_->user_;
+    jgb::writer* wr = w->get_writer(0);
     int buf_size = wr->buf_->len_;
     int len = random() % (buf_size);
     if(len > 0)
@@ -72,13 +50,12 @@ static int tsk_write(void* worker)
 static void tsk_exit(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
-    context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->task_->instance_->user_;
-    ctx->chk_ctx[0].dump();
-    ctx->chk_ctx[1].dump();
+    context_331c5b56c71b* ctx = (context_331c5b56c71b*) w->task_->instance_->user_;
+    ctx->wr_ctx.dump();
     delete ctx;
 }
 
-static loop_ptr_t loops[] = { tsk_read, tsk_read, tsk_write, nullptr };
+static loop_ptr_t loops[] = { tsk_write, nullptr };
 
 static jgb_loop_t loop
 {
@@ -87,7 +64,7 @@ static jgb_loop_t loop
     .exit = tsk_exit
 };
 
-jgb_api_t test_task_buffer
+jgb_api_t write_buffer
 {
     .version = MAKE_API_VERSION(0, 1),
     .desc = "test task buffer",
