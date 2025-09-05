@@ -33,6 +33,7 @@
 #define LOG_BUF_SIZE 2048
 
 static struct timespec uptime;
+int jgb_print_level = JGB_LOG_INFO;
 
 static const char* log_level_name [] =
 {
@@ -63,13 +64,16 @@ static const char * const colours[] = {
 
 static void to_stderr(int level, const char *line)
 {
-    if (isatty(2))
+    if(level < jgb_print_level)
     {
-        fprintf(stderr, "%c%s%s%c[0m", 27, colours[level], line, 27);
-    }
-    else
-    {
-        fprintf(stderr, "%s", line);
+        if (isatty(2))
+        {
+            fprintf(stderr, "%c%s%s%c[0m", 27, colours[level], line, 27);
+        }
+        else
+        {
+            fprintf(stderr, "%s", line);
+        }
     }
 }
 
@@ -92,14 +96,17 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
 
     if(level == JGB_LOG_RAW)
     {
-        if (isatty(2))
+        if(level < jgb_print_level)
         {
-            fprintf(stderr, "%c%s", 27, colours[level]);
-        }
-        vfprintf(stderr, format, args);
-        if (isatty(2))
-        {
-            fprintf(stderr, "%c[0m", 27);
+            if (isatty(2))
+            {
+                fprintf(stderr, "%c%s", 27, colours[level]);
+            }
+            vfprintf(stderr, format, args);
+            if (isatty(2))
+            {
+                fprintf(stderr, "%c[0m", 27);
+            }
         }
         return;
     }

@@ -22,11 +22,14 @@
  * IN THE SOFTWARE.
  */
 #include "log.h"
+#include "helper.h"
 #include <unistd.h>
 #include "core.h"
 #include <signal.h>
 
 extern jgb_api_t module;
+extern int jgb_print_level;
+
 static bool exit_flag = false;
 
 // 处理 SIGINT 信号
@@ -50,12 +53,15 @@ int main(int argc, char *argv[])
 
     int c;
 
-    while ((c = getopt (argc, argv, "D:")) != -1)
+    while ((c = getopt (argc, argv, "D:v:")) != -1)
     {
         switch (c)
         {
         case 'D':
             jgb::core::get_instance()->set_conf_dir(optarg);
+            break;
+        case 'v':
+            jgb::stoi(optarg, jgb_print_level);
             break;
         default:
             break;
