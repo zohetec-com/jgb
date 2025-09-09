@@ -5,7 +5,6 @@ add_library(jgb-core SHARED
     config_factory.cpp
     helper.cpp
     core.cpp
-    service.cpp
     buffer.cpp
     module.cpp)
 target_include_directories(jgb-core PRIVATE ../include)

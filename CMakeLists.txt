@@ -6,4 +6,5 @@ project(
 )
 
 add_subdirectory(src)
+add_subdirectory(misc)
 add_subdirectory(test)
