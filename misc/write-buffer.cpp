@@ -51,6 +51,7 @@ static void tsk_exit(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
     context_331c5b56c71b* ctx = (context_331c5b56c71b*) w->task_->instance_->user_;
+    jgb_raw("write buf: %s\n", w->get_writer(0)->buf_->id().c_str());
     ctx->wr_ctx.dump();
     delete ctx;
 }
