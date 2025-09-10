@@ -1,6 +1,16 @@
 {
   "instances": [
     {
+    "assert_on_error": true,
+    "sleep_ms": 10,
+    "task":{
+      "readers": [
+        {
+          "buf_id": "VENC#4"
+        }
+      ]
+    }},
+    {
     "check": false,
     "task":{
       "readers": [
@@ -10,6 +20,7 @@
       ]
     }},
     {
+    "assert_on_error": true,
     "task":{
       "readers": [
         {
@@ -18,6 +29,7 @@
       ]
     }},
     {
+    "assert_on_error": true,
     "task":{
       "readers": [
         {
@@ -26,6 +38,7 @@
       ]
     }},
     {
+    "assert_on_error": true,
     "task":{
       "readers": [
         {
@@ -34,6 +47,7 @@
       ]
     }},
     {
+    "assert_on_error": true,
     "task":{
       "readers": [
         {
@@ -42,6 +56,7 @@
       ]
     }},
     {
+    "assert_on_error": true,
     "task":{
       "readers": [
         {
@@ -50,6 +65,7 @@
       ]
     }},
     {
+    "assert_on_error": true,
     "task":{
       "readers": [
         {

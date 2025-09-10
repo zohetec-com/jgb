@@ -12,10 +12,12 @@
                             "/read_buffer/instances[5]",
                             "/read_buffer/instances[5]",
                             "/read_buffer/instances[6]",
+                            "/read_buffer/instances[7]",
                             "/write_buffer/instances[0]",
                             "/write_buffer/instances[1]",
                             "/write_buffer/instances[2]",
-                            "/write_buffer/instances[3]"],
+                            "/write_buffer/instances[3]",
+                            "/write_buffer/instances[4]"],
 			"auto":1
 		}
 	]

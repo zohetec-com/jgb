@@ -147,7 +147,7 @@ public:
                 {
                     ret = JGB_ERR_FAIL;
                     ++ stat_check_fail_;
-                    jgb_fail("check_u32_context: { [%d] = %02x, expected %02x }",
+                    jgb_fail("check_u32_context: { [%x] = %02x, expected %02x }",
                               off, buf[off], bytes[pos_]);
                     {
                         int start;

@@ -12,7 +12,7 @@
                 "test_run"],
             "library": "jgb.build/test/libtest-core.so"},
         {"name": ["test_core", "test_run"],
-            "library": ["libtest-core.so", "libtest-core.so"]},
+            "library": ["jgb.build/test/libtest-core.so", "jgb.build/test/libtest-core.so"]},
         {"name": "test_core"},
         {"name": ["test_core"]},
         {"library": "libabc1.so"},
