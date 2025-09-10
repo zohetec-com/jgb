@@ -28,6 +28,8 @@
 #include <stdarg.h>
 #include <assert.h>
 
+__BEGIN_DECLS
+
 enum jgb_log_level
 {
     JGB_LOG_ERROR = 0,
@@ -78,5 +80,7 @@ void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char
 void jgb_dump(void* buf, int len);
 
 void jgb_log_init();
+
+__END_DECLS
 
 #endif // LOG_H
