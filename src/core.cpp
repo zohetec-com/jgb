@@ -180,6 +180,11 @@ config* worker::get_config()
     return task_->instance_->conf_;
 }
 
+instance* worker::get_instance()
+{
+    return instance::get_instance(get_config());
+}
+
 reader* worker::get_reader(int index)
 {
     if(index >=0 && index < (int) task_->readers_.size())

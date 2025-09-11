@@ -56,6 +56,7 @@ public:
     void* get_user();
 
     config* get_config();
+    instance* get_instance();
 
     reader* get_reader(int index);
     writer* get_writer(int index);
