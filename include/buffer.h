@@ -73,6 +73,8 @@ public:
     // request_frame 成功后持有该帧。
     // 禁止覆盖已经被读者持有的帧。
     bool holding_;
+    // 可丢弃的。
+    bool disposable_;
 
 public:
     struct Impl;

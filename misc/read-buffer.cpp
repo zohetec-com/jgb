@@ -32,7 +32,7 @@ struct context_33129dfc1a36
         last_stat_recv_bytes(0L),
         last_stat_recv_frames(0L)
     {
-        last_stat_time =  (struct timespec) {0};
+        last_stat_time =  (struct timespec) {0,0};
     }
 };
 

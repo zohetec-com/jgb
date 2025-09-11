@@ -87,10 +87,9 @@ int buffer::resize(int len)
         return JGB_ERR_DENIED;
     }
 
-    // todo： 最小该多少字节呢？
-    if(len < 1024)
+    if(len <= writer::fixed_header_size())
     {
-        len = 1024;
+        return JGB_ERR_INVALID;
     }
 
     jgb_assert(!start_);
@@ -237,6 +236,7 @@ reader::reader(buffer *buf)
     stored_(0),
     serial_(0),
     holding_(false),
+    disposable_(false),
     pimpl_(new Impl())
 {
 }
@@ -371,6 +371,14 @@ writer::writer(buffer* buf)
 
 static int wait_reader_release(writer* wr, boost::unique_lock<boost::mutex>& lock, reader* rd, int timeout)
 {
+    if(rd->disposable_ && !rd->holding_)
+    {
+        lock.unlock();
+        rd->release();
+        lock.lock();
+        return 0;
+    }
+
     if(rd->pimpl_->rd_release_cond.wait_for(lock, boost::chrono::milliseconds(timeout)) == boost::cv_status::no_timeout)
     {
         return 0; // 成功

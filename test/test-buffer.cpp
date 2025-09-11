@@ -321,8 +321,59 @@ static void test_05()
     jgb::buffer_manager::get_instance()->remove_buffer(buf);
 }
 
+// 可丢弃的未读数据。
+static void test_06()
+{
+    jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#06");
+    jgb::writer* wr = buf->add_writer();
+    jgb::reader* rd = buf->add_reader();
+    buf->resize(168);
+    rd->disposable_ = true;
+    int r;
+    uint8_t* p;
+    uint8_t* p1;
+    r = wr->request_buffer(&p, 20);
+    jgb_assert(!r);
+    r = wr->commit_all();
+    jgb_assert(!r);
+    r = wr->request_buffer(&p, 60);
+    jgb_assert(!r);
+    r = wr->commit_all();
+    jgb_assert(!r);
+    r = wr->request_buffer(&p, 40);
+    jgb_assert(!r);
+    p1 = p;
+    r = wr->commit_all();
+    jgb_assert(!r);
+    jgb_assert(rd->stored_ == 3);
+    r = wr->request_buffer(&p, 40);
+    jgb_assert(!r);
+    jgb_assert(rd->stored_ == 1);
+    struct jgb::frame frm;
+    r = rd->request_frame(&frm);
+    jgb_assert(!r);
+    jgb_assert(p1 == frm.buf);
+    r = wr->commit_all();
+    jgb_assert(!r);
+    r = wr->request_buffer(&p, 40);
+    jgb_assert(!r);
+    r = wr->commit_all();
+    jgb_assert(!r);
+    r = wr->request_buffer(&p, 40);
+    jgb_assert(r);
+    rd->release();
+    r = wr->request_buffer(&p, 40);
+    jgb_assert(!r);
+    r = wr->commit_all();
+    jgb_assert(!r);
+    buf->remove_writer(wr);
+    buf->remove_reader(rd);
+    jgb::buffer_manager::get_instance()->remove_buffer(buf);
+}
+
 static int init(void*)
 {
+    test_06();
     test_05();
     test_04();
     test_check_u32();
