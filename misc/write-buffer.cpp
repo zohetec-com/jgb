@@ -8,12 +8,19 @@
 struct context_331c5b56c71b
 {
     jgb::write_32u_context wr_ctx;
+    int fixed_len;
+
+    context_331c5b56c71b()
+    : fixed_len(0)
+    {
+    }
 };
 
 static int tsk_init(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
     context_331c5b56c71b* ctx = new context_331c5b56c71b;
+    w->get_config()->get("fixed_len", ctx->fixed_len);
     w->task_->instance_->user_ = ctx;
     jgb_assert(w->get_writer(0));
     return 0;
@@ -25,7 +32,13 @@ static int tsk_write(void* worker)
     context_331c5b56c71b* ctx = (context_331c5b56c71b*) w->task_->instance_->user_;
     jgb::writer* wr = w->get_writer(0);
     int buf_size = wr->buf_->len_;
-    int len = random() % (buf_size);
+    int len = ctx->fixed_len;
+
+    if(!len)
+    {
+        len = random() % (buf_size);
+    }
+
     if(len > 0)
     {
         int r;
@@ -33,7 +46,7 @@ static int tsk_write(void* worker)
         r = wr->request_buffer(&x_buf, len);
         if(!r)
         {
-            if(len % 20)
+            if(ctx->fixed_len || len % 20)
             {
                 ctx->wr_ctx.fill(x_buf, len);
                 wr->commit(len);
