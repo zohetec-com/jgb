@@ -328,7 +328,7 @@ static void test_06()
     jgb::writer* wr = buf->add_writer();
     jgb::reader* rd = buf->add_reader();
     buf->resize(168);
-    rd->disposable_ = true;
+    rd->discard_ = true;
     int r;
     uint8_t* p;
     uint8_t* p1;

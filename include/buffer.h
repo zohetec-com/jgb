@@ -62,6 +62,8 @@ public:
     int64_t stat_bytes_read_;
     int64_t stat_frames_read_;
     int64_t stat_timeout_;
+    int64_t stat_bytes_discarded_;
+    int64_t stat_frames_discarded_;
 
     buffer* buf_;
     // 读指针。
@@ -74,7 +76,7 @@ public:
     // 禁止覆盖已经被读者持有的帧。
     bool holding_;
     // 可丢弃的。
-    bool disposable_;
+    bool discard_;
 
 public:
     struct Impl;

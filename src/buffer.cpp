@@ -231,12 +231,14 @@ struct reader::Impl
 reader::reader(buffer *buf)
     : stat_bytes_read_(0L),
     stat_frames_read_(0L),
+    stat_bytes_discarded_(0L),
+    stat_frames_discarded_(0L),
     buf_(buf),
     cur_(nullptr),
     stored_(0),
     serial_(0),
     holding_(false),
-    disposable_(false),
+    discard_(false),
     pimpl_(new Impl())
 {
 }
@@ -325,8 +327,6 @@ void reader::release()
         -- stored_;
         ++ serial_;
 
-        holding_ = false;
-
         jgb_assert(cur_);
         jgb_assert(cur_ + sizeof(struct frame_header) <= buf_->end_);
 
@@ -347,12 +347,21 @@ void reader::release()
             cur_ = buf_->start_;
         }
 
+        if(holding_)
+        {
+            stat_bytes_read_ += hdr->len;
+            ++ stat_frames_read_;
+        }
+        else
+        {
+            stat_bytes_discarded_ += hdr->len;
+            ++ stat_frames_discarded_;
+        }
+        holding_ = false;
+
         // 通知写者，读指针已经移动。
         rd_lock.unlock();
         pimpl_->rd_release_cond.notify_one();
-
-        stat_bytes_read_ += hdr->len;
-        ++ stat_frames_read_;
     }
 }
 
@@ -371,7 +380,7 @@ writer::writer(buffer* buf)
 
 static int wait_reader_release(writer* wr, boost::unique_lock<boost::mutex>& lock, reader* rd, int timeout)
 {
-    if(rd->disposable_ && !rd->holding_)
+    if(rd->discard_ && !rd->holding_)
     {
         lock.unlock();
         rd->release();
