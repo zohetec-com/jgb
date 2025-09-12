@@ -65,6 +65,7 @@ static int tsk_read(void* worker)
         jgb_assert(frm.start_offset == 0);
         if(ctx->dump)
         {
+            jgb_raw("buf id: %s\n", rd->buf_->id().c_str());
             jgb_dump(frm.buf, frm.len);
         }
         if(ctx->check)
