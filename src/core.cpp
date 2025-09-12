@@ -80,6 +80,7 @@ struct core_worker
             ++ w->looped_;
             if(r)
             {
+                // TODO: 处理主动退出，JGB_ERR_END。
                 w->normal_ = false;
                 jgb_fail("{ r = %d, id = %d }", r, w->id_);
                 break;
@@ -416,6 +417,16 @@ int task::init_io_readers()
                     reader* rd = buf->add_reader();
                     if(rd)
                     {
+                        bool discard;
+                        r = val->conf_[i]->get("discard", discard);
+                        if(!r)
+                        {
+                            rd->discard_ = discard;
+                            if(discard)
+                            {
+                                jgb_notice("reader discard mode enabled. { buf_id = %s, reader = %d }", id.c_str(), i);
+                            }
+                        }
                         readers_.push_back(rd);
                     }
                     jgb_assert(rd);
