@@ -87,6 +87,92 @@ static int tsk_read(void* worker)
     return 0;
 }
 
+static std::string string_format(const char* fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char buf[256];
+    vsnprintf(buf, sizeof(buf), fmt, args);
+    va_end(args);
+    return std::string(buf);
+}
+
+static const char* quantity_unit(int order)
+{
+    switch(order)
+    {
+        case 0: return "B";
+        case 1: return "kB";
+        case 2: return "MB";
+        case 3: return "GB";
+        case 4: return "TB";
+        default: return "B";
+    }
+}
+
+static const char* rate_unit(int order)
+{
+    switch(order)
+    {
+    case 0: return "B/s";
+    case 1: return "kB/s";
+    case 2: return "MB/s";
+    case 3: return "GB/s";
+    case 4: return "TB/s";
+    default: return "B/s";
+    }
+}
+
+static void quantity_order(double v, int& order, double& order_v)
+{
+    if(v < 1000.0)
+    {
+        order = 0;
+        order_v = v;
+        return;
+    }
+    else if(v < 1000.0 * 1000.0)
+    {
+        order = 1;
+        order_v = v / 1000.0;
+        return;
+    }
+    else if(v < 1000.0 * 1000.0 * 1000.0)
+    {
+        order = 2;
+        order_v = v / (1000.0 * 1000.0);
+        return;
+    }
+    else if(v < 1000.0 * 1000.0 * 1000.0 * 1000.0)
+    {
+        order = 3;
+        order_v = v / (1000.0 * 1000.0 * 1000.0);
+        return;
+    }
+    else
+    {
+        order = 4;
+        order_v = v / (1000.0 * 1000.0 * 1000.0 * 1000.0);
+        return;
+    }
+}
+
+static std::string rate_to_string(double rate)
+{
+    int order = 0;
+    double order_v = rate;
+    quantity_order(rate, order, order_v);
+    return string_format("%8.2f %s", order_v, rate_unit(order));
+}
+
+static std::string quantity_to_string(double quantity)
+{
+    int order = 0;
+    double order_v = quantity;
+    quantity_order(quantity, order, order_v);
+    return string_format("%8.2f %s", order_v, quantity_unit(order));
+}
+
 static int tsk_report(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
@@ -104,9 +190,10 @@ static int tsk_report(void* worker)
         jgb_assert(bytes >= 0);
         double rate = (double) bytes * 1000000 / (double) elapse;
         double fps = (double) frames * 1000000 / (double) elapse;
-        jgb_info("reader %d, input %8ld bytes, %8.2f B/s, %8ld frames, %8.2f fps",
+        jgb_info("reader %d, input %s, %s, %8ld frames, %8.2f fps",
                  w->get_instance()->id_,
-                 bytes, rate,
+                 quantity_to_string(bytes).c_str(),
+                 rate_to_string(rate).c_str(),
                  frames, fps);
     }
     ctx->last_stat_time = now;
