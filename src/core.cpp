@@ -54,7 +54,7 @@ struct core_worker
         jgb_assert(w->task_->instance_->app_->api_->loop->loops);
         jgb_assert(w->task_->instance_->app_->api_->loop->loops[w->id_]);
 
-        int r;
+        int r = 0;
         jgb_loop_t* loop = w->task_->instance_->app_->api_->loop;
         bool single = w->task_->workers_.size() == 1;
 
@@ -80,9 +80,10 @@ struct core_worker
             ++ w->looped_;
             if(r)
             {
-                // TODO: 处理主动退出，JGB_ERR_END。
-                w->normal_ = false;
-                jgb_fail("{ r = %d, id = %d }", r, w->id_);
+                if(r != JGB_ERR_END)
+                {
+                    w->normal_ = false;
+                }
                 break;
             }
         }
@@ -96,11 +97,22 @@ struct core_worker
             }
         }
 
-        jgb_debug("loop exit. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
-                  w->task_->instance_->app_->name_.c_str(),
-                  w->task_->instance_->id_,
-                  w->id_,
-                  w->looped_);
+        if(r == JGB_ERR_END)
+        {
+            jgb_info("loop exit. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
+                     w->task_->instance_->app_->name_.c_str(),
+                     w->task_->instance_->id_,
+                     w->id_,
+                     w->looped_);
+        }
+        else
+        {
+            jgb_fail("loop exit abnormally. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
+                     w->task_->instance_->app_->name_.c_str(),
+                     w->task_->instance_->id_,
+                     w->id_,
+                     w->looped_);
+        }
     }
 };
 
