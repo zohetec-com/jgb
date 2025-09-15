@@ -754,7 +754,7 @@ int config::set(const char* path, bool bval)
         return pval->set(bval, idx);
     }
 #ifdef DEBUG
-    jgb_fail("set { path = %s, bval = %d }", path, bval);
+    jgb_fail("set { r = %d, path = %s, bval = %d }", r, path, bval);
 #endif
     return r;
 }
@@ -771,7 +771,7 @@ int config::set(const char* path, int ival)
         return pval->set(ival, idx);
     }
 #ifdef DEBUG
-    jgb_fail("set { path = %s, ival = %d }", path, ival);
+    jgb_fail("set { r = %d, path = %s, ival = %d }", r, path, ival);
 #endif
     return r;
 }
@@ -788,7 +788,7 @@ int config::set(const char* path, int64_t lval)
         return pval->set(lval, idx);
     }
 #ifdef DEBUG
-    jgb_fail("set { path = %s, lval = %ld }", path, lval);
+    jgb_fail("set { r = %d, path = %s, lval = %ld }", r, path, lval);
 #endif
     return r;
 }
@@ -805,7 +805,7 @@ int config::set(const char* path, double rval)
         return pval->set(rval, idx);
     }
 #ifdef DEBUG
-    jgb_fail("set { path = %s, rval = %f }", path, rval);
+    jgb_fail("set { r = %d, path = %s, rval = %f }", r, path, rval);
 #endif
     return r;
 }
@@ -822,7 +822,7 @@ int config::set(const char* path, const char* sval)
         return pval->set(sval, idx);
     }
 #ifdef DEBUG
-    jgb_fail("set { path = %s, sval = %s }", path, sval ? sval : "null");
+    jgb_fail("set { r = %d, path = %s, sval = %s }", r, path, sval ? sval : "null");
 #endif
     return r;
 }
@@ -839,7 +839,7 @@ int config::set(const char* path, const std::string& sval)
         return pval->set(sval, idx);
     }
 #ifdef DEBUG
-    jgb_fail("set { path = %s, sval = %s }", path, sval.c_str());
+    jgb_fail("set { r = %d, path = %s, sval = %s }", r, path, sval.c_str());
 #endif
     return r;
 }
