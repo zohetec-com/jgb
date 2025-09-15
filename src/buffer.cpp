@@ -394,7 +394,9 @@ static int wait_reader_release(writer* wr, boost::unique_lock<boost::mutex>& loc
     }
     else
     {
-        jgb_debug("time out.{ buf = %s }", wr->buf_->id().c_str());
+        jgb_debug("wait reader time out. { buf = %s, reader id = %s }",
+                  wr->buf_->id().c_str(),
+                  rd->id_.c_str());
         ++ wr->stat_timeout_;
         return JGB_ERR_TIMEOUT; // 超时
     }

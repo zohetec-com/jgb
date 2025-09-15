@@ -66,6 +66,7 @@ public:
     int64_t stat_frames_discarded_;
 
     buffer* buf_;
+    std::string id_;
     // 读指针。
     uint8_t* cur_;
     // 可读帧数。
@@ -113,6 +114,7 @@ public:
     int64_t stat_timeout_;
 
     buffer* buf_;
+    std::string id_;
     // 所请求的长度。
     int requested_len_;
     // 保留的长度：包括帧头、载荷、填充。

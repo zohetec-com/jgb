@@ -28,6 +28,7 @@
 #include <string>
 #include <dlfcn.h>
 #include <boost/thread.hpp>
+#include <boost/format.hpp>
 
 namespace jgb
 {
@@ -429,6 +430,7 @@ int task::init_io_readers()
                     reader* rd = buf->add_reader();
                     if(rd)
                     {
+                        rd->id_ = (boost::format("%1%_%2%_%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();;
                         bool discard;
                         r = val->conf_[i]->get("discard", discard);
                         if(!r)
@@ -471,6 +473,7 @@ int task::init_io_writers()
                     writer* wr = buf->add_writer();
                     if(wr)
                     {
+                        wr->id_ = (boost::format("%1%_%2%_%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();;
                         writers_.push_back(wr);
 
                         int sz;
