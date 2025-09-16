@@ -83,6 +83,7 @@ struct core_worker
             {
                 if(r != JGB_ERR_END)
                 {
+                    jgb_warning("{ r = %d }", r);
                     w->normal_ = false;
                 }
                 break;
@@ -98,22 +99,12 @@ struct core_worker
             }
         }
 
-        if(r == JGB_ERR_END)
-        {
-            jgb_info("loop exit. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
-                     w->task_->instance_->app_->name_.c_str(),
-                     w->task_->instance_->id_,
-                     w->id_,
-                     w->looped_);
-        }
-        else
-        {
-            jgb_fail("loop exit abnormally. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
-                     w->task_->instance_->app_->name_.c_str(),
-                     w->task_->instance_->id_,
-                     w->id_,
-                     w->looped_);
-        }
+        jgb_info("loop exit %s. { app = %s, inst id = %d, worker id = %d, looped = %ld }",
+                 w->normal_ ? "normally" : "abnormally",
+                 w->task_->instance_->app_->name_.c_str(),
+                 w->task_->instance_->id_,
+                 w->id_,
+                 w->looped_);
     }
 };
 
