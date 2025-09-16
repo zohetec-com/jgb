@@ -2,6 +2,15 @@
   "instances": [
     {
     "assert_on_error": true,
+    "task":{
+      "readers": [
+        {
+          "buf_id": "# 3 writers"
+        }
+      ]
+    }},
+    {
+    "assert_on_error": true,
     "sleep_ms": 10,
     "task":{
       "readers": [

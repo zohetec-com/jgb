@@ -13,6 +13,8 @@
                             "/read_buffer/instances[5]",
                             "/read_buffer/instances[6]",
                             "/read_buffer/instances[7]",
+                            "/read_buffer/instances[8]",
+                            "/write_buffer_x3/instances[0]",
                             "/write_buffer/instances[0]",
                             "/write_buffer/instances[1]",
                             "/write_buffer/instances[2]",

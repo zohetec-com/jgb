@@ -1,2 +1,2 @@
 set confirm off
-set args -D test
+set args -D test -v7

@@ -53,8 +53,8 @@ struct buffer::Impl
 
 struct writer::Impl
 {
-    // 不支持多线程使用同一个 writer。-- 没有需求场景。
-    //boost::shared_mutex rw_mutex;
+    // 支持多线程共用一个 writer。
+    boost::mutex mutex;
 };
 
 buffer::buffer(const std::string& id)
@@ -656,27 +656,21 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
 
     if(!buf || len <= 0)
     {
-        jgb_warning("Invalid arguments. { buf=%p, len=%d }", buf, len);
+        jgb_warning("Invalid arguments. { buf = %p, requested len = %d }", buf, len);
         return JGB_ERR_INVALID;
     }
 
     if(frame_len > buf_->len_)
     {
-        jgb_warning("缓冲区容量不足。{ len = %d }", len);
+        jgb_warning("缓冲区容量不足。{ buf id = %s, buf size = %d, requested len = %d }",
+                    buf_->id().c_str(), buf_->len_,
+                    len);
         return JGB_ERR_LIMIT;
     }
 
-    // 在提交已申请的缓冲区之前重复请求分配缓冲区。
-    if(reserved_len_ > 0)
-    {
-        jgb_warning("存在未提交的已分配的缓冲区。 { buf id = %s, reserved_len_ = %d, writer = %p }",
-                    buf_->id().c_str(), reserved_len_, this);
-        return JGB_ERR_DENIED;
-    }
-
-    // 写者尚未完成初始化。
     if(!buf_->cur_)
     {
+        jgb_warning("缓冲区未初始化。{ buf id = %s }", buf_->id().c_str());
         return JGB_ERR_FAIL;
     }
 
@@ -685,11 +679,24 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
         timeout = 0;
     }
 
+    pimpl_->mutex.lock();
+
     boost::shared_lock<boost::shared_mutex> buf_lock(buf_->pimpl_->rw_mutex);
     r = acquire_buffer_ownership(timeout);
     if(r)
     {
+        pimpl_->mutex.unlock();
         return r;
+    }
+
+    // 在提交已申请的缓冲区之前重复请求分配缓冲区。
+    if(reserved_len_ > 0)
+    {
+        jgb_warning("存在未提交的已分配的缓冲区。 { buf id = %s, reserved_len_ = %d, writer = %p }",
+                    buf_->id().c_str(), reserved_len_, this);
+        release_buffer_ownership();
+        pimpl_->mutex.unlock();
+        return JGB_ERR_DENIED;
     }
 
     next = buf_->cur_ + frame_len;
@@ -706,6 +713,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
         }
         reserved_len_ = 0;
         release_buffer_ownership();
+        pimpl_->mutex.unlock();
         return r;
     }
     else
@@ -739,6 +747,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
             }
             reserved_len_ = 0;
             release_buffer_ownership();
+            pimpl_->mutex.unlock();
             return r;
         }
         // 场景3：从缓冲区开始的空间足以容纳新帧，但超过了写指针。
@@ -760,6 +769,7 @@ int writer::request_buffer(uint8_t** buf, int len, int timeout)
             }
             reserved_len_ = 0;
             release_buffer_ownership();
+            pimpl_->mutex.unlock();
             return r;
         }
     }
@@ -808,6 +818,8 @@ int writer::commit(int len, int start_offset)
             return JGB_ERR_INVALID;
         }
 
+        // TODO: 如果确认拥有 pimpl_->mutex ？
+
         if(len > 0
             && start_offset >= 0
             && len + start_offset <= requested_len_)
@@ -842,6 +854,7 @@ int writer::commit(int len, int start_offset)
 
             reserved_len_ = 0;
             release_buffer_ownership();
+            pimpl_->mutex.unlock();
 
             return 0; // 成功
         }
@@ -851,6 +864,7 @@ int writer::commit(int len, int start_offset)
 
             reserved_len_ = 0;
             release_buffer_ownership();
+            pimpl_->mutex.unlock();
 
             return 0;
         }
