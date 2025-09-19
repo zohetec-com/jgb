@@ -45,7 +45,7 @@ class buffer;
 class reader
 {
 public:
-    reader(buffer* buf);
+    reader(buffer* buf, bool discard = false);
     //~reader();
 
     // 请求从缓冲区获取一帧数据。
@@ -153,7 +153,7 @@ public:
 
     int resize(int len);
 
-    reader* add_reader();
+    reader* add_reader(bool discard = false);
     writer* add_writer();
 
     int remove_reader(reader* r);

@@ -112,10 +112,10 @@ int buffer::resize(int len)
     return 0; // Success
 }
 
-reader* buffer::add_reader()
+reader* buffer::add_reader(bool discard)
 {
     boost::unique_lock<boost::shared_mutex> lock(pimpl_->rw_mutex);
-    reader* rd = new reader(this);
+    reader* rd = new reader(this, discard);
     readers_.push_back(rd);
     return rd;
 }
@@ -228,7 +228,7 @@ struct reader::Impl
     boost::condition_variable rd_release_cond;
 };
 
-reader::reader(buffer *buf)
+reader::reader(buffer *buf, bool discard)
     : stat_bytes_read_(0L),
     stat_frames_read_(0L),
     stat_bytes_discarded_(0L),
@@ -238,7 +238,7 @@ reader::reader(buffer *buf)
     stored_(0),
     serial_(0),
     holding_(false),
-    discard_(false),
+    discard_(discard),
     pimpl_(new Impl())
 {
 }
