@@ -10,9 +10,21 @@ struct context_331c5b56c71b
     jgb::write_32u_context wr_ctx;
     int fixed_len;
 
+    FILE* fp;
+    bool loop;
+
     context_331c5b56c71b()
-    : fixed_len(0)
+    : fixed_len(0),
+      fp(nullptr),
+      loop(false)
     {
+    }
+    ~context_331c5b56c71b()
+    {
+        if(fp)
+        {
+            fclose(fp);
+        }
     }
 };
 
@@ -20,6 +32,19 @@ static int tsk_init(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
     context_331c5b56c71b* ctx = new context_331c5b56c71b;
+    std::string filename;
+    w->get_config()->get("input_file", filename);
+    if(!filename.empty())
+    {
+        ctx->fp = fopen(filename.c_str(), "rb");
+        if(!ctx->fp)
+        {
+            jgb_fail("fopen. { file %s, error %s }", filename.c_str(), strerror(errno));
+            delete ctx;
+            return JGB_ERR_IO;
+        }
+        w->get_config()->get("loop", ctx->loop);
+    }
     w->get_config()->get("fixed_len", ctx->fixed_len);
     w->task_->instance_->user_ = ctx;
     jgb_assert(w->get_writer(0));
@@ -48,8 +73,35 @@ static int tsk_write(void* worker)
         {
             if(ctx->fixed_len || len % 20)
             {
-                ctx->wr_ctx.fill(x_buf, len);
-                wr->commit(len);
+                if(!ctx->fp)
+                {
+                    ctx->wr_ctx.fill(x_buf, len);
+                    wr->commit(len);
+                }
+                else
+                {
+                    size_t n;
+                    n = fread(x_buf, 1, len, ctx->fp);
+                    if(n > 0)
+                    {
+                        wr->commit(n);
+                    }
+                    else
+                    {
+                        wr->cancel();
+                    }
+                    if(feof(ctx->fp))
+                    {
+                        if(ctx->loop)
+                        {
+                            rewind(ctx->fp);
+                        }
+                        else
+                        {
+                            return JGB_ERR_END;
+                        }
+                    }
+                }
             }
             else
             {

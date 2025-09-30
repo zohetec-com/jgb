@@ -21,6 +21,8 @@ struct context_33129dfc1a36
     int64_t last_stat_recv_bytes;
     int64_t last_stat_recv_frames;
 
+    FILE* fp;
+
     context_33129dfc1a36()
         : dump(false),
         check(true),
@@ -30,9 +32,18 @@ struct context_33129dfc1a36
         stat_recv_bytes(0L),
         stat_recv_frames(0L),
         last_stat_recv_bytes(0L),
-        last_stat_recv_frames(0L)
+        last_stat_recv_frames(0L),
+        fp(nullptr)
     {
         last_stat_time =  (struct timespec) {0,0};
+    }
+
+    ~context_33129dfc1a36()
+    {
+        if(fp)
+        {
+            fclose(fp);
+        }
     }
 };
 
@@ -40,8 +51,20 @@ static int tsk_init(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
     context_33129dfc1a36* ctx = new context_33129dfc1a36;
+    std::string filename;
     w->task_->instance_->user_ = ctx;
     jgb_assert(w->get_reader(0));
+    w->get_config()->get("output_file", filename);
+    if(!filename.empty())
+    {
+        ctx->fp = fopen(filename.c_str(), "wb");
+        if(!ctx->fp)
+        {
+            jgb_fail("fopen. { file %s, error %s }", filename.c_str(), strerror(errno));
+            delete ctx;
+            return JGB_ERR_IO;
+        }
+    }
     w->get_config()->get("dump", ctx->dump);
     w->get_config()->get("check", ctx->check);
     w->get_config()->get("assert_on_error", ctx->assert_on_error);
@@ -75,6 +98,12 @@ static int tsk_read(void* worker)
             {
                 jgb_assert(0);
             }
+        }
+        if(ctx->fp)
+        {
+            size_t n;
+            n = fwrite(frm.buf, 1, frm.len, ctx->fp);
+            jgb_assert(n == (uint32_t) frm.len);
         }
         ctx->stat_recv_bytes += frm.len;
         ++ ctx->stat_recv_frames;
