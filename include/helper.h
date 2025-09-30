@@ -37,6 +37,7 @@ int stoi(const std::string& str, int& v);
 int stoll(const std::string& str, int64_t& v);
 int stod(const std::string& str, double& v);
 void sleep(int ms);
+int put_string(char* buf, int len, int& offset, const char* format, ...);
 
 } // namespace jgb
 

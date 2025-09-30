@@ -180,6 +180,34 @@ static void test_stoi()
     jgb_assert(v == 1);
 }
 
+static void test_put_string()
+{
+    char buf[32];
+    int offset = 0;
+    int len = sizeof(buf);
+    int r = 0;
+    r = jgb::put_string(buf, len, offset, "昌平");
+    jgb_assert(!r);
+    jgb_assert(offset == strlen("昌平"));
+    //jgb_debug("%d", offset);
+    r = jgb::put_string(buf, len, offset, "%d", 0x20082012);
+    jgb_assert(!r);
+    jgb_assert(offset == strlen("昌平") + 9);
+    //jgb_debug("%d", offset);
+    r = jgb::put_string(buf, len, offset, "海淀");
+    jgb_assert(!r);
+    jgb_assert(offset == strlen("昌平") + 9 + strlen("海淀"));
+    //jgb_debug("%d", offset);
+    r = jgb::put_string(buf, len, offset, "%d", 0x20250930);
+    jgb_assert(!r);
+    jgb_assert(offset == strlen("昌平") + 9 + strlen("海淀") + 9);
+    r = jgb::put_string(buf, len, offset, "CN");
+    jgb_assert(!r);
+    jgb_assert(offset == 32);
+    r = jgb::put_string(buf, len, offset, "0");
+    jgb_assert(r);
+}
+
 static void check_test_json(jgb::config* conf)
 {
     int r;
@@ -1283,6 +1311,7 @@ static void test_new_conf()
 
 static int init(void*)
 {
+    test_put_string();
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
     test_new_conf();

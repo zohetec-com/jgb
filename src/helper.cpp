@@ -199,4 +199,29 @@ void sleep(int ms)
     boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
 }
 
+int put_string(char* buf, int len, int& offset, const char* format, ...)
+{
+    if(buf
+        && len > 0
+        && offset >= 0
+        && offset < len)
+    {
+        va_list args;
+        va_start(args, format);
+        int ret = vsnprintf(buf + offset, len - offset, format, args);
+        va_end(args);
+        if(ret > 0)
+        {
+            offset += ret;
+            if(offset > len)
+            {
+                offset = len;
+                return JGB_ERR_LIMIT;
+            }
+            return 0;
+        }
+    }
+    return JGB_ERR_FAIL;
+}
+
 } // namespace jgb
