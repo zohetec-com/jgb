@@ -24,7 +24,7 @@
 #ifndef WRITE_32U_CONTEXT_H
 #define WRITE_32U_CONTEXT_H
 
-#include "log.h"
+#include <jgb/log.h>
 #include <inttypes.h>
 
 namespace jgb
