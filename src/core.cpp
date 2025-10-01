@@ -128,6 +128,7 @@ worker::worker(int id, task* task)
     {
         pimpl_ = std::make_unique<Impl>();
     }
+    worker_id_ = (boost::format("%1%:%2%.%3%") % task_->instance_->app_->name_.c_str() % task_->instance_->id_ % id_).str();
 }
 
 int worker::start()
@@ -168,28 +169,13 @@ int worker::stop()
                 }
             }
         }
-        jgb_debug("join thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
+        jgb_debug("join thread. { worker id = %s }", worker_id_.c_str());
         pimpl_->thread_->join();
-        jgb_debug("join thread done. { id = %d }", id_);
+        jgb_debug("join thread done. { worker id = %s }", worker_id_.c_str());
         delete pimpl_->thread_;
         pimpl_->thread_ = nullptr;
     }
     return 0;
-}
-
-std::string worker::get_thread_id()
-{
-    if(pimpl_->thread_)
-    {
-        // https://stackoverflow.com/questions/61203655/how-to-printf-stdthis-threadget-id-in-c
-        std::ostringstream oss;
-        oss << pimpl_->thread_->get_id();
-        return oss.str();
-    }
-    else
-    {
-        return std::string();
-    }
 }
 
 void worker::set_user(void* user)
@@ -476,7 +462,7 @@ int task::init_io_readers()
                     reader* rd = buf->add_reader();
                     if(rd)
                     {
-                        rd->id_ = (boost::format("%1%_%2%_%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();;
+                        rd->id_ = (boost::format("%1%:%2%.%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();
                         bool discard;
                         r = val->conf_[i]->get("discard", discard);
                         if(!r)
@@ -519,7 +505,7 @@ int task::init_io_writers()
                     writer* wr = buf->add_writer();
                     if(wr)
                     {
-                        wr->id_ = (boost::format("%1%_%2%_%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();;
+                        wr->id_ = (boost::format("%1%:%2%.%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();
                         writers_.push_back(wr);
 
                         int sz;

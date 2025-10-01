@@ -61,14 +61,13 @@ public:
     reader* get_reader(int index);
     writer* get_writer(int index);
 
-    std::string get_thread_id();
-
     int id_;
     task* task_;
     bool run_;
     bool exited_;  // 线程是否已结束循环。
     bool normal_; // 线程的结束状态：true-正常; false-异常
     int64_t looped_;
+    std::string worker_id_;
 
 private:
     struct Impl;
