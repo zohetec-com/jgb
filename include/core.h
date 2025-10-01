@@ -98,6 +98,12 @@ private:
     int start_multiple();
     int stop_multiple();
 
+    int start_zero();
+    int stop_zero();
+
+    int start_multiple_or_zero(worker* w);
+    int stop_multiple_or_zero(worker* w);
+
     int init_io_readers();
     int init_io_writers();
 

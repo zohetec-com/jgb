@@ -120,8 +120,12 @@ worker::worker(int id, task* task)
       run_(false),
       exited_(false),
       normal_(true),
-      pimpl_(new Impl())
+      pimpl_(nullptr)
 {
+    if(id >= 0)
+    {
+        pimpl_ = std::make_unique<Impl>();
+    }
 }
 
 int worker::start()
@@ -243,10 +247,10 @@ int task::start_single()
     return 0;
 }
 
-int task::start_multiple()
+int task::start_multiple_or_zero(worker* w)
 {
     jgb_assert(run_);
-    jgb_assert(workers_.size() > 1);
+    jgb_assert(workers_.size() != 1);
     jgb_assert(instance_);
     jgb_assert(instance_->app_);
     jgb_assert(instance_->app_->api_);
@@ -257,7 +261,7 @@ int task::start_multiple()
 
     if(loop->setup)
     {
-        r = loop->setup(&workers_[0]);
+        r = loop->setup(w);
         if(r)
         {
             // TODO: 补充参数
@@ -274,11 +278,23 @@ int task::start_multiple()
     return 0;
 }
 
+int task::start_multiple()
+{
+    return start_multiple_or_zero(&workers_[0]);
+}
+
+int task::start_zero()
+{
+    worker dummy_worker(-1, this);
+    jgb_assert(!workers_.size());
+    return start_multiple_or_zero(&dummy_worker);
+}
+
 // TODO: 线程安全。
 int task::start()
 {
     //jgb_debug("{ workers_.size() = %lu }", workers_.size());
-    if(workers_.size() > 0)
+    if(instance_->app_->api_->loop)
     {
         if(state_ == task_state_running)
         {
@@ -298,9 +314,13 @@ int task::start()
             {
                 r =  start_multiple();
             }
-            else
+            else if(workers_.size() == 1)
             {
                 r = start_single();
+            }
+            else
+            {
+                r = start_zero();
             }
             if(!r)
             {
@@ -332,7 +352,7 @@ int task::stop_single()
     return workers_[0].stop();
 }
 
-int task::stop_multiple()
+int task::stop_multiple_or_zero(worker* w)
 {
     for(auto i = workers_.rbegin(); i != workers_.rend(); ++i)
     {
@@ -347,16 +367,27 @@ int task::stop_multiple()
     jgb_loop_t* loop = instance_->app_->api_->loop;
     if(loop->exit)
     {
-        loop->exit(&workers_[0]);
+        loop->exit(w);
     }
 
     return 0;
 }
 
+int task::stop_multiple()
+{
+    return stop_multiple_or_zero(&workers_[0]);
+}
+
+int task::stop_zero()
+{
+    worker dummy_worker(-1, this);
+    return stop_multiple_or_zero(&dummy_worker);
+}
+
 // TODO: 线程安全。
 int task::stop()
 {
-    if(workers_.size() > 0)
+    if(instance_->app_->api_->loop)
     {
         if(state_ == task_state_running)
         {
@@ -369,9 +400,13 @@ int task::stop()
             {
                 r = stop_multiple();
             }
-            else
+            else if(workers_.size() == 1)
             {
                 r = stop_single();
+            }
+            else
+            {
+                r = stop_zero();
             }
             if(!r)
             {

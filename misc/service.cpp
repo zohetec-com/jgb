@@ -89,12 +89,6 @@ static int tsk_init(void* worker)
     return 0;
 }
 
-static int tsk_loop(void*)
-{
-    jgb::sleep(1000);
-    return 0;
-}
-
 static void tsk_exit(void* worker)
 {
     jgb::worker* w = (jgb::worker*) worker;
@@ -109,12 +103,10 @@ static void tsk_exit(void* worker)
     }
 }
 
-static loop_ptr_t loops[] = { tsk_loop, nullptr };
-
 static jgb_loop_t loop
 {
     .setup = tsk_init,
-    .loops = loops,
+    .loops = nullptr,
     .exit = tsk_exit
 };
 
