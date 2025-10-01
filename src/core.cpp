@@ -89,7 +89,6 @@ struct core_worker
                 break;
             }
         }
-        w->exited_ = true;
 
         if(single)
         {
@@ -105,6 +104,8 @@ struct core_worker
                  w->task_->instance_->id_,
                  w->id_,
                  w->looped_);
+
+        w->exited_ = true;
     }
 };
 
