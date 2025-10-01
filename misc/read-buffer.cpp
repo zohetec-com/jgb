@@ -219,7 +219,8 @@ static int tsk_report(void* worker)
         jgb_assert(bytes >= 0);
         double rate = (double) bytes * 1000000 / (double) elapse;
         double fps = (double) frames * 1000000 / (double) elapse;
-        jgb_info("reader %s, input %s, %s, %8ld frames, %8.2f fps",
+        jgb_info("buf %s, reader %s, input %s, %s, %8ld frames, %8.2f fps",
+                 w->get_reader(0)->buf_->id().c_str(),
                  w->get_reader(0)->id_.c_str(),
                  quantity_to_string(bytes).c_str(),
                  rate_to_string(rate).c_str(),
