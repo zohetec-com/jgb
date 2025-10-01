@@ -91,6 +91,9 @@ public:
     bool run_; // 控制线程：true-运行; false-结束
     enum task_state state_;
 
+    // true - 发送 SIGUSR1 信号终止线程，false - 等待线程自然退出。
+    bool send_kill_;
+
 private:
     int start_single();
     int stop_single();

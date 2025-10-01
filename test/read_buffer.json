@@ -1,86 +1,104 @@
 {
   "instances": [
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "# 3 writers"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "# 3 writers"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "sleep_ms": 10,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#4"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "sleep_ms": 10,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#4"
+          }
+        ]
+      }
+    },
     {
-    "check": false,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#3"
-        }
-      ]
-    }},
+      "check": false,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#3"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#2"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#2"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#2"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#2"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#1"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#1"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#1"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#1"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#1"
-        }
-      ]
-    }},
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#1"
+          }
+        ]
+      }
+    },
     {
-    "assert_on_error": true,
-    "task":{
-      "readers": [
-        {
-          "buf_id": "VENC#1"
-        }
-      ]
-    }}
+      "assert_on_error": true,
+      "task": {
+        "send_kill": true,
+        "readers": [
+          {
+            "buf_id": "VENC#1"
+          }
+        ]
+      }
+    }
   ]
 }

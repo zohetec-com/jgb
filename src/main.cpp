@@ -36,13 +36,16 @@ static bool exit_flag = false;
 static void handler(int signum)
 {
     jgb_notice("signal catched. { signum = %d }", signum);
-    exit_flag = true;
-
-    static int count = 0;
-    ++ count;
-    if(count > 10)
+    if(signum == SIGINT)
     {
-        exit(1);
+        exit_flag = true;
+
+        static int count = 0;
+        ++ count;
+        if(count > 10)
+        {
+            exit(1);
+        }
     }
 }
 
@@ -73,7 +76,12 @@ int main(int argc, char *argv[])
 
     // https://man7.org/linux/man-pages/man7/signal.7.html
     act.sa_handler = &handler;
-    if (sigaction(SIGINT, &act, NULL) == -1) {
+    if (sigaction(SIGINT, &act, NULL) == -1)
+    {
+        perror("sigaction");
+    }
+    if (sigaction(SIGUSR1, &act, NULL) == -1)
+    {
         perror("sigaction");
     }
 

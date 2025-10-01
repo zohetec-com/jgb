@@ -196,7 +196,9 @@ int stod(const std::string& str, double& v)
 
 void sleep(int ms)
 {
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
+    usleep(ms*1000);
+    //信号对 boost::this_thread::sleep_for 无效。
+    //boost::this_thread::sleep_for(boost::chrono::milliseconds(ms));
 }
 
 int put_string(char* buf, int len, int& offset, const char* format, ...)

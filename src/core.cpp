@@ -29,6 +29,8 @@
 #include <dlfcn.h>
 #include <boost/thread.hpp>
 #include <boost/format.hpp>
+#include <signal.h>
+#include <pthread.h>
 
 namespace jgb
 {
@@ -151,6 +153,21 @@ int worker::stop()
     if(pimpl_->thread_)
     {
         run_ = false;
+        if(task_->send_kill_)
+        {
+            int i = 1;
+            pthread_kill(pimpl_->thread_->native_handle(), SIGUSR1);
+            while (!exited_)
+            {
+                jgb::sleep(10);
+                pthread_kill(pimpl_->thread_->native_handle(), SIGUSR1);
+                ++ i;
+                if(!(i % 100))
+                {
+                    jgb_warning("kill thread.");
+                }
+            }
+        }
         jgb_debug("join thread. { id = %d, thread id = %s }", id_, get_thread_id().c_str());
         pimpl_->thread_->join();
         jgb_debug("join thread done. { id = %d }", id_);
@@ -218,7 +235,8 @@ writer* worker::get_writer(int index)
 task::task(instance *instance)
     : instance_(instance),
       run_(false),
-      state_(task_state_idle)
+      state_(task_state_idle),
+      send_kill_(false)
 {
     jgb_assert(instance_);
     app* app = instance_->app_;
@@ -236,6 +254,7 @@ task::task(instance *instance)
                 workers_.push_back(worker(i, this));
             }
         }
+        instance_->conf_->get("task/send_kill", send_kill_);
     }
 }
 
