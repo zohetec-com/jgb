@@ -154,6 +154,7 @@ public:
     int resize(int len);
 
     reader* add_reader(bool discard = false);
+    reader* add_reader(reader* rd);
     writer* add_writer();
 
     int remove_reader(reader* r);

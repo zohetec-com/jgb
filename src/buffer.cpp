@@ -57,6 +57,13 @@ struct writer::Impl
     boost::mutex mutex;
 };
 
+struct reader::Impl
+{
+    boost::mutex mutex;
+    boost::condition_variable wr_commit_cond;
+    boost::condition_variable rd_release_cond;
+};
+
 buffer::buffer(const std::string& id)
     : id_(id),
     len_(0),
@@ -118,6 +125,23 @@ reader* buffer::add_reader(bool discard)
     reader* rd = new reader(this, discard);
     readers_.push_back(rd);
     return rd;
+}
+
+reader* buffer::add_reader(reader* rd)
+{
+    if(rd && rd->buf_ == this)
+    {
+        boost::unique_lock<boost::shared_mutex> lock(pimpl_->rw_mutex);
+        boost::unique_lock<boost::mutex> rd_lock(rd->pimpl_->mutex);
+        reader* new_rd = new reader(this);
+        jgb_assert(new_rd->buf_ == this);
+        new_rd->cur_ = rd->cur_;
+        new_rd->stored_ = rd->stored_;
+        new_rd->serial_ = rd->serial_;
+        readers_.push_back(new_rd);
+        return new_rd;
+    }
+    return nullptr;
 }
 
 writer* buffer::add_writer()
@@ -220,13 +244,6 @@ int buffer_manager::remove_buffer(buffer* buf)
     }
     return -1; // Buffer not found
 }
-
-struct reader::Impl
-{
-    boost::mutex mutex;
-    boost::condition_variable wr_commit_cond;
-    boost::condition_variable rd_release_cond;
-};
 
 reader::reader(buffer *buf, bool discard)
     : stat_bytes_read_(0L),
