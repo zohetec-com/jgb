@@ -78,6 +78,7 @@ class task
 {
 public:
     task(instance* instance);
+    ~task();
 
     int start();
     int stop();
@@ -87,6 +88,7 @@ public:
 
     instance* instance_;
     std::vector<worker> workers_;
+    worker* dummy_worker_;
     bool run_; // 控制线程：true-运行; false-结束
     enum task_state state_;
 
@@ -99,12 +101,6 @@ private:
 
     int start_multiple();
     int stop_multiple();
-
-    int start_zero();
-    int stop_zero();
-
-    int start_multiple_or_zero(worker* w);
-    int stop_multiple_or_zero(worker* w);
 
     int init_io_readers();
     int init_io_writers();

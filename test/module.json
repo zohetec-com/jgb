@@ -9,6 +9,7 @@
                 "test_setup_fail",
                 "test_setup_fail_multiple",
                 "test_loop_fail",
+                "no_loops_app",
                 "test_run"],
             "library": "jgb.build/test/libtest-core.so"},
         {"name": ["test_core", "test_run"],

@@ -41,12 +41,7 @@ struct core_worker
     {
         //jgb_function();
 
-        if(!w)
-        {
-            jgb_bug();
-            return;
-        }
-
+        jgb_assert(w);
         jgb_assert(!w->exited_);
         jgb_assert(w->normal_);
         jgb_assert(w->task_);
@@ -165,7 +160,7 @@ int worker::stop()
                 ++ i;
                 if(!(i % 100))
                 {
-                    jgb_warning("kill thread.");
+                    jgb_warning("kill thread. { worker id = %s, retry %d }", worker_id_.c_str(), i);
                 }
             }
         }
@@ -220,13 +215,14 @@ writer* worker::get_writer(int index)
 
 task::task(instance *instance)
     : instance_(instance),
+      dummy_worker_(nullptr),
       run_(false),
       state_(task_state_idle),
       send_kill_(false)
 {
     jgb_assert(instance_);
     app* app = instance_->app_;
-    workers_.resize(0);
+    jgb_assert(!workers_.size());
     if(app
             && app->api_
             && app->api_->loop)
@@ -240,8 +236,17 @@ task::task(instance *instance)
                 workers_.push_back(worker(i, this));
             }
         }
+        if(!workers_.size())
+        {
+            dummy_worker_ = new worker(-1, this);
+        }
         instance_->conf_->get("task/send_kill", send_kill_);
     }
+}
+
+task::~task()
+{
+    delete dummy_worker_;
 }
 
 int task::start_single()
@@ -252,7 +257,7 @@ int task::start_single()
     return 0;
 }
 
-int task::start_multiple_or_zero(worker* w)
+int task::start_multiple()
 {
     jgb_assert(run_);
     jgb_assert(workers_.size() != 1);
@@ -266,6 +271,7 @@ int task::start_multiple_or_zero(worker* w)
 
     if(loop->setup)
     {
+        worker* w = workers_.size()? &workers_[0] : dummy_worker_;
         r = loop->setup(w);
         if(r)
         {
@@ -281,18 +287,6 @@ int task::start_multiple_or_zero(worker* w)
     }
 
     return 0;
-}
-
-int task::start_multiple()
-{
-    return start_multiple_or_zero(&workers_[0]);
-}
-
-int task::start_zero()
-{
-    worker dummy_worker(-1, this);
-    jgb_assert(!workers_.size());
-    return start_multiple_or_zero(&dummy_worker);
 }
 
 // TODO: 线程安全。
@@ -315,17 +309,13 @@ int task::start()
             // 启动任务
             int r;
             run_ = true;
-            if(workers_.size() > 1)
+            if(workers_.size() != 1)
             {
-                r =  start_multiple();
-            }
-            else if(workers_.size() == 1)
-            {
-                r = start_single();
+                r = start_multiple();
             }
             else
             {
-                r = start_zero();
+                r = start_single();
             }
             if(!r)
             {
@@ -357,7 +347,7 @@ int task::stop_single()
     return workers_[0].stop();
 }
 
-int task::stop_multiple_or_zero(worker* w)
+int task::stop_multiple()
 {
     for(auto i = workers_.rbegin(); i != workers_.rend(); ++i)
     {
@@ -372,21 +362,11 @@ int task::stop_multiple_or_zero(worker* w)
     jgb_loop_t* loop = instance_->app_->api_->loop;
     if(loop->exit)
     {
+        worker* w = workers_.size()? &workers_[0] : dummy_worker_;
         loop->exit(w);
     }
 
     return 0;
-}
-
-int task::stop_multiple()
-{
-    return stop_multiple_or_zero(&workers_[0]);
-}
-
-int task::stop_zero()
-{
-    worker dummy_worker(-1, this);
-    return stop_multiple_or_zero(&dummy_worker);
 }
 
 // TODO: 线程安全。
@@ -401,17 +381,13 @@ int task::stop()
 
             int r;
             run_ = false;
-            if(workers_.size() > 1)
+            if(workers_.size() != 1)
             {
                 r = stop_multiple();
             }
-            else if(workers_.size() == 1)
-            {
-                r = stop_single();
-            }
             else
             {
-                r = stop_zero();
+                r = stop_single();
             }
             if(!r)
             {
