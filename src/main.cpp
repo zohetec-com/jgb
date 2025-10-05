@@ -93,6 +93,7 @@ int main(int argc, char *argv[])
     }
 
     jgb::core::get_instance()->uninstall_all();
+    jgb_log_fini();
 
     return 0;
 }

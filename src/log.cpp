@@ -28,12 +28,16 @@
 #include <string.h>
 #include "log.h"
 #include "helper.h"
+#include "buffer.h"
 #include <inttypes.h>
 
 #define LOG_BUF_SIZE 2048
 
 static struct timespec uptime;
 int jgb_print_level = JGB_LOG_INFO;
+static jgb::buffer* buf = nullptr;
+static jgb::writer* wr = nullptr;
+static jgb::reader* rd = nullptr;
 
 static const char* log_level_name [] =
 {
@@ -193,6 +197,7 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
     {
         static const char* s = "...[truncated]\n";
         strcpy(buf + LOG_BUF_SIZE - strlen(s) - 1, s);
+        off = LOG_BUF_SIZE;
     }
     else
     {
@@ -203,6 +208,21 @@ void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *for
         }
     }
     to_stderr(level, buf);
+    if(wr)
+    {
+        int r;
+        log_frame_header* h;
+        r = wr->request_buffer((uint8_t**) &h, sizeof(log_frame_header) + off, 0);
+        if(!r)
+        {
+            h->level = level;
+            h->unused[0] = 0;
+            h->unused[1] = 0;
+            h->unused[2] = 0;
+            memcpy(h->log, buf, off);
+            wr->commit_all();
+        }
+    }
 }
 
 void jgb_dump(void* buf, int len)
@@ -226,4 +246,17 @@ void jgb_dump(void* buf, int len)
 void jgb_log_init()
 {
     clock_gettime(CLOCK_MONOTONIC, &uptime);
+    buf = jgb::buffer_manager::get_instance()->add_buffer("jgb#log");
+    buf->resize(256*1024);
+    wr = buf->add_writer();
+    rd = buf->add_reader(true);
+}
+
+void jgb_log_fini()
+{
+    buf->remove_reader(rd);
+    buf->remove_writer(wr);
+    jgb::buffer_manager::get_instance()->remove_buffer(buf);
+    wr = nullptr;
+    buf = nullptr;
 }
