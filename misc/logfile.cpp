@@ -95,16 +95,16 @@ struct context_a01064074357
     {
         std::string src_file_path;
         struct stat st;
-        for(int i=0; i<count_-1; i++)
+        for(int i=count_-1; i>0; i--)
         {
             src_file_path = get_file_path();
-            if(i>0)
+            if(i>1)
             {
-                src_file_path += '.' + std::to_string(i);
+                src_file_path += '.' + std::to_string(i-1);
             }
             if(!stat(src_file_path.c_str(), &st))
             {
-                std::string dst_file_path = get_file_path() + '.' + std::to_string(i+1);
+                std::string dst_file_path = get_file_path() + '.' + std::to_string(i);
                 int r = rename(src_file_path.c_str(), dst_file_path.c_str());
                 fprintf(stderr, "rename %s => %s\n", src_file_path.c_str(), dst_file_path.c_str());
                 if(r)
