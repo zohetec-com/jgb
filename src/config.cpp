@@ -742,6 +742,19 @@ pair* config::find(const char* name, int n) const
     return nullptr;
 }
 
+int config::rename(const char* old_name, const char *new_name)
+{
+    pair* pr = find(old_name);
+    if(pr)
+    {
+        free((void*) pr->name_);
+        pr->name_ = strdup(new_name);
+        jgb_assert(pr->name_);
+        return 0;
+    }
+    return JGB_ERR_NOT_FOUND;
+}
+
 int config::set(const char* path, bool bval)
 {
     int r;

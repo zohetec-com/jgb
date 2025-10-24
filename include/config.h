@@ -167,6 +167,7 @@ public:
 
     // n 用于限定 name 的长度，以配合 jpath 使用。
     pair* find(const char* name, int n = 0) const;
+    int rename(const char* old_name, const char* new_name);
 
     int64_t int64(const char* path, int64_t def = 0L);
     std::string str(const char* path, const std::string def = "");
