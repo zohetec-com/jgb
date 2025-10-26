@@ -29,11 +29,13 @@
 #include "log.h"
 #include "helper.h"
 #include <inttypes.h>
+#include <boost/thread.hpp>
 
-#define LOG_BUF_SIZE 2048
+#define LOG_BUF_SIZE 1024
 
+int jgb_log_print_level = JGB_LOG_INFO;
+void (*jgb_log_to_other)(int level, const char* preamble, const char *format, va_list ap) = nullptr;
 static struct timespec uptime;
-int jgb_print_level = JGB_LOG_INFO;
 
 static const char* log_level_name [] =
 {
@@ -62,21 +64,6 @@ static const char * const colours[] = {
     "[31m",
 };
 
-static void to_stderr(int level, const char *line)
-{
-    if(level < jgb_print_level)
-    {
-        if (isatty(2))
-        {
-            fprintf(stderr, "%c%s%s%c[0m", 27, colours[level], line, 27);
-        }
-        else
-        {
-            fprintf(stderr, "%s", line);
-        }
-    }
-}
-
 static void timespecsub(struct timespec *a, struct timespec *b, struct timespec *res)
 {
     res->tv_nsec = a->tv_nsec - b->tv_nsec;
@@ -89,120 +76,97 @@ static void timespecsub(struct timespec *a, struct timespec *b, struct timespec 
     }
 }
 
+static void to_stderr(int level, const char* preamble, const char *format, va_list ap)
+{
+    if(level < jgb_log_print_level)
+    {
+        static boost::shared_mutex mutex;
+        boost::unique_lock<boost::shared_mutex> lock(mutex);
+        if (isatty(2))
+        {
+            fprintf(stderr, "%c%s", 27, colours[level]);
+        }
+        fprintf(stderr, "%s", preamble);
+        vfprintf(stderr, format, ap);
+        if(level != JGB_LOG_RAW)
+        {
+            fprintf(stderr, "\n");
+        }
+        if (isatty(2))
+        {
+            fprintf(stderr, "%c[0m", 27);
+        }
+    }
+}
+
 void jgb_log(jgb_log_level level, const char* fname, int lineno, const char *format, ...)
 {
-    va_list args;
-    va_start(args, format);
-
-    if(level == JGB_LOG_RAW)
-    {
-        if(level < jgb_print_level)
-        {
-            if (isatty(2))
-            {
-                fprintf(stderr, "%c%s", 27, colours[level]);
-            }
-            vfprintf(stderr, format, args);
-            if (isatty(2))
-            {
-                fprintf(stderr, "%c[0m", 27);
-            }
-        }
-        return;
-    }
-
     char buf[LOG_BUF_SIZE];
-    int len = LOG_BUF_SIZE;
     int off = 0;
-    int n;
-    struct timeval tv;
-    struct tm tm;
-    struct tm *ptm = NULL;
+    int r;
+    va_list args;
 
-    n = snprintf(buf + off, len, "%s", log_level_name[level]);
-    if(n > 0)
+    buf[0] = '\0';
+    if(level < JGB_LOG_RAW)
     {
-        off += n;
-        len -= n;
-    }
+        int len = LOG_BUF_SIZE;
+        struct timeval tv;
+        struct tm tm;
+        struct tm *ptm = NULL;
 
-    gettimeofday(&tv, NULL);
-    ptm = localtime_r(&tv.tv_sec, &tm);
-    if(ptm)
-    {
-        n = snprintf(buf + off, len,
-                     "[%04d/%02d/%02d %02d:%02d:%02d:%03d.%03d]",
-                     ptm->tm_year + 1900,
-                     ptm->tm_mon + 1,
-                     ptm->tm_mday,
-                     ptm->tm_hour,
-                     ptm->tm_min,
-                     ptm->tm_sec,
-                     (int) (tv.tv_usec / 1000),
-                     (int) (tv.tv_usec % 1000));
-        if(n > 0)
+        r = jgb::put_string(buf, len, off, "%s", log_level_name[level]);
+        jgb_assert(!r);
+
+        gettimeofday(&tv, NULL);
+        ptm = localtime_r(&tv.tv_sec, &tm);
+        if(ptm)
         {
-            off += n;
-            len -= n;
+            r = jgb::put_string(buf, len, off,
+                           "[%04d/%02d/%02d %02d:%02d:%02d:%03d.%03d]",
+                           ptm->tm_year + 1900,
+                           ptm->tm_mon + 1,
+                           ptm->tm_mday,
+                           ptm->tm_hour,
+                           ptm->tm_min,
+                           ptm->tm_sec,
+                           (int) (tv.tv_usec / 1000),
+                           (int) (tv.tv_usec % 1000));
+            jgb_assert(!r);
         }
+
+        struct timespec now;
+        struct timespec elapse;
+
+        clock_gettime(CLOCK_MONOTONIC, &now);
+        timespecsub(&now, &uptime, &elapse);
+
+        long days = elapse.tv_sec / (24 * 3600);
+        long hours = (elapse.tv_sec % (24 * 3600)) / 3600;
+        long minutes = (elapse.tv_sec % 3600) / 60;
+        long seconds = elapse.tv_sec % 60;
+        r = jgb::put_string(buf, len, off,
+                       "[%ldd %02ld:%02ld:%02ld.%06ld]",
+                       days, hours, minutes, seconds, elapse.tv_nsec / 1000);
+        jgb_assert(!r);
+
+        pid_t tid = gettid();
+        r = jgb::put_string(buf, len, off, "[%6d]", tid);
+        jgb_assert(!r);
+
+        r = jgb::put_string(buf, len, off, "[%s:%d]", fname, lineno);
+        jgb_assert(!r);
     }
 
-    struct timespec now;
-    struct timespec elapse;
-
-    clock_gettime(CLOCK_MONOTONIC, &now);
-    timespecsub(&now, &uptime, &elapse);
-
-    long days = elapse.tv_sec / (24 * 3600);
-    long hours = (elapse.tv_sec % (24 * 3600)) / 3600;
-    long minutes = (elapse.tv_sec % 3600) / 60;
-    long seconds = elapse.tv_sec % 60;
-    n = snprintf(buf + off, len,
-                 "[%ldd %02ld:%02ld:%02ld.%06ld]",
-                 days, hours, minutes, seconds, elapse.tv_nsec / 1000);
-    if(n > 0)
-    {
-        off += n;
-        len -= n;
-    }
-
-    pid_t tid = gettid();
-    n = snprintf(buf + off, len, "[%6d]", tid);
-    if(n > 0)
-    {
-        off += n;
-        len -= n;
-    }
-
-    n = snprintf(buf + off, len, "[%s:%d]", fname, lineno);
-    if(n > 0)
-    {
-        off += n;
-        len -= n;
-    }
-
-    n = vsnprintf(buf + off, len, format, args);
-    if(n > 0)
-    {
-        off += n;
-        len -= n;
-    }
+    va_start(args, format);
+    to_stderr(level, buf, format, args);
     va_end(args);
 
-    if(off > LOG_BUF_SIZE - 3)
+    if(jgb_log_to_other)
     {
-        static const char* s = "...[truncated]\n";
-        strcpy(buf + LOG_BUF_SIZE - strlen(s) - 1, s);
+        va_start(args, format);
+        jgb_log_to_other(level, buf, format, args);
+        va_end(args);
     }
-    else
-    {
-        if(buf[off - 1] != '\n')
-        {
-            buf[off++] = '\n';
-            buf[off] = '\0';
-        }
-    }
-    to_stderr(level, buf);
 }
 
 void jgb_dump(void* buf, int len)

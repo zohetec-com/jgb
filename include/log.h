@@ -79,6 +79,13 @@ void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char
 
 void jgb_dump(void* buf, int len);
 
+struct __attribute__((packed))  log_frame_header
+{
+    char level;
+    char unused[3];
+    char log[0];
+};
+
 void jgb_log_init();
 
 __END_DECLS
