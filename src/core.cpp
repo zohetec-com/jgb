@@ -435,7 +435,18 @@ int task::init_io_readers()
                 buffer* buf = buffer_manager::get_instance()->add_buffer(id);
                 if(buf)
                 {
-                    reader* rd = buf->add_reader();
+                    reader* rd;
+                    bool sync_rd0 = false;
+                    val->conf_[i]->get("sync_rd0", sync_rd0);
+                    if(sync_rd0 && !buf->readers_.empty())
+                    {
+                        reader* rd0 = buf->readers_.front();
+                        rd = buf->add_reader(rd0);
+                    }
+                    else
+                    {
+                        rd = buf->add_reader();
+                    }
                     if(rd)
                     {
                         rd->id_ = (boost::format("%1%:%2%.%3%") % instance_->app_->name_.c_str() % instance_->id_ % i).str();
@@ -446,7 +457,7 @@ int task::init_io_readers()
                             rd->discard_ = discard;
                             if(discard)
                             {
-                                jgb_notice("reader discard mode enabled. { buf_id = %s, reader = %d }", id.c_str(), i);
+                                jgb_notice("reader discard mode enabled. { buf_id = %s, reader = %s }", id.c_str(), rd->id_.c_str());
                             }
                         }
                         readers_.push_back(rd);
