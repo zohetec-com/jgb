@@ -300,7 +300,6 @@ static void test_04()
 // 多个写者
 static void test_05()
 {
-    jgb::write_32u_context wr_ctx;
     jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#05");
     jgb::writer* wr0 = buf->add_writer();
     jgb::writer* wr1 = buf->add_writer();
@@ -371,8 +370,50 @@ static void test_06()
     jgb::buffer_manager::get_instance()->remove_buffer(buf);
 }
 
+// clone reader
+static void test_07()
+{
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
+    jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#07");
+    jgb::writer* wr = buf->add_writer();
+    jgb::reader* rd = buf->add_reader();
+    buf->resize((jgb::writer::fixed_header_size() + 16) * 3);
+    rd->discard_ = true;
+    int r;
+    int len;
+    uint8_t* p;
+    for(int i=0; i<3; i++)
+    {
+        len = 8 + 8 * i;
+        r = wr->request_buffer(&p, len);
+        jgb_assert(!r);
+        wr_ctx.fill(p, len);
+        r = wr->commit_all();
+        jgb_assert(!r);
+    }
+    jgb::reader* rd2 = buf->add_reader(rd);
+    r = wr->request_buffer(&p, 1);
+    jgb_assert(r);
+    struct jgb::frame frm;
+    for(int i=0; i<3; i++)
+    {
+        r = rd2->request_frame(&frm, 0);
+        jgb_assert(!r);
+        len = 8 + 8 * i;
+        jgb_assert(frm.len == len);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
+        rd2->release();
+    }
+    buf->remove_writer(wr);
+    buf->remove_reader(rd);
+    buf->remove_reader(rd2);
+    jgb::buffer_manager::get_instance()->remove_buffer(buf);
+}
+
 static int init(void*)
 {
+    test_07();
     test_06();
     test_05();
     test_04();
