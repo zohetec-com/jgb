@@ -1,5 +1,6 @@
 {
     "import":[
+        {"name": ["logfile"], "library": "libjgb-misc.so"},
         {"name": ["test_log",
                 "test_cpp",
                 "test_core",

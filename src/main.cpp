@@ -28,8 +28,8 @@
 #include <signal.h>
 
 extern jgb_api_t module;
-extern int jgb_print_level;
-
+extern jgb_api_t logbuf;
+extern int jgb_log_print_level;
 static bool exit_flag = false;
 
 // 处理 SIGINT 信号
@@ -51,11 +51,9 @@ static void handler(int signum)
 
 int main(int argc, char *argv[])
 {
-    jgb_log_init();
     jgb_info("jgb start.");
 
     int c;
-
     while ((c = getopt (argc, argv, "D:v:")) != -1)
     {
         switch (c)
@@ -64,12 +62,14 @@ int main(int argc, char *argv[])
             jgb::core::get_instance()->set_conf_dir(optarg);
             break;
         case 'v':
-            jgb::stoi(optarg, jgb_print_level);
+            jgb::stoi(optarg, jgb_log_print_level);
             break;
         default:
             break;
         }
     }
+
+    jgb::core::get_instance()->install("logbuf", &logbuf);
 
     // 注册 SIGINT 信号处理函数
     struct sigaction act = {};
