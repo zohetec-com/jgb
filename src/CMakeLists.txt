@@ -1,5 +1,6 @@
 add_library(jgb-core SHARED
     log.cpp
+    log-buf.cpp
     config.cpp
     schema.cpp
     config_factory.cpp
