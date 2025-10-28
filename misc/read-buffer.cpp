@@ -9,6 +9,7 @@
 struct context_33129dfc1a36
 {
     bool dump;
+    bool is_text;
     bool check;
     bool assert_on_error;
     int sleep_ms;
@@ -25,6 +26,7 @@ struct context_33129dfc1a36
 
     context_33129dfc1a36()
         : dump(false),
+        is_text(false),
         check(true),
         assert_on_error(false),
         sleep_ms(0),
@@ -66,10 +68,13 @@ static int tsk_init(void* worker)
         }
     }
     w->get_config()->get("dump", ctx->dump);
+    w->get_config()->get("is_text", ctx->is_text);
     w->get_config()->get("check", ctx->check);
     w->get_config()->get("assert_on_error", ctx->assert_on_error);
     w->get_config()->get("sleep_ms", ctx->sleep_ms);
-    jgb_info("{ check = %d, assert_on_error = %d }", ctx->check, ctx->assert_on_error);
+    w->get_config()->get("interval", ctx->interval);
+    jgb_info("{ check = %d, assert_on_error = %d, report interval = %d secs }",
+             ctx->check, ctx->assert_on_error, ctx->interval);
     return 0;
 }
 
@@ -88,8 +93,15 @@ static int tsk_read(void* worker)
         jgb_assert(frm.start_offset == 0);
         if(ctx->dump)
         {
-            jgb_raw("buf id: %s\n", rd->buf_->id().c_str());
-            jgb_dump(frm.buf, frm.len);
+            if(!ctx->is_text)
+            {
+                jgb_raw("buf id: %s\n", rd->buf_->id().c_str());
+                jgb_dump(frm.buf, frm.len);
+            }
+            else
+            {
+                jgb_raw("%.*s", frm.len, frm.buf);
+            }
         }
         if(ctx->check)
         {
@@ -207,6 +219,11 @@ static int tsk_report(void* worker)
     jgb::worker* w = (jgb::worker*) worker;
     context_33129dfc1a36* ctx = (context_33129dfc1a36*) w->get_user();
     struct timespec now;
+
+    if(!ctx->interval)
+    {
+        return JGB_ERR_END;
+    }
 
     clock_gettime(CLOCK_MONOTONIC, &now);
     if(ctx->last_stat_time.tv_sec)
