@@ -411,8 +411,40 @@ static void test_07()
     jgb::buffer_manager::get_instance()->remove_buffer(buf);
 }
 
+// 单帧占满缓冲区。
+static void test_08()
+{
+    jgb::write_32u_context wr_ctx;
+    jgb::check_u32_context chk_ctx;
+    jgb::buffer* buf = jgb::buffer_manager::get_instance()->add_buffer("test#08");
+    jgb::writer* wr = buf->add_writer();
+    jgb::reader* rd = buf->add_reader();
+    buf->resize((jgb::writer::fixed_header_size() + 100));
+    for(int i=0; i<10; i++)
+    {
+        int r;
+        uint8_t* p;
+        r = wr->request_buffer(&p, 100);
+        jgb_assert(!r);
+        wr_ctx.fill(p, 100);
+        r = wr->commit_all();
+        r = wr->request_buffer(&p, 1);
+        jgb_assert(r);
+        struct jgb::frame frm;
+        r = rd->request_frame(&frm, 0);
+        jgb_assert(!r);
+        jgb_assert(frm.len == 100);
+        jgb_assert(!chk_ctx.check(frm.buf, frm.len));
+        rd->release();
+    }
+    buf->remove_writer(wr);
+    buf->remove_reader(rd);
+    jgb::buffer_manager::get_instance()->remove_buffer(buf);
+}
+
 static int init(void*)
 {
+    test_08();
     test_07();
     test_06();
     test_05();
