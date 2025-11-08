@@ -9,7 +9,7 @@ int jgb_log_buf_level = JGB_LOG_INFO;
 static jgb::buffer* buf = nullptr;
 static jgb::writer* wr = nullptr;
 static jgb::reader* rd = nullptr;
-static int stat_log_fail = 0;
+static int64_t stat_log_fail = 0;
 
 static int to_buf_lower(int len, int level, const char* preamble, int preamble_len, const char *format, va_list ap)
 {
