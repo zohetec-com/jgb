@@ -222,11 +222,9 @@ int value::get(const char* path, value** val, int* idx)
 
     //jgb_debug("{ s = %.*s, type_ = %d, e = %c }", (int)(e - s), s, (int)type_, *e);
 
-    if(*s != '\0')
+    if(*s != '\0' && *s != '/')
     {
-        int xidx;
-        r = str_to_index(xidx, s, e - 1);
-        if(r)
+        if(*s != '[')
         {
             if(type_ == data_type::object)
             {
@@ -236,7 +234,11 @@ int value::get(const char* path, value** val, int* idx)
         }
         else
         {
-            if(xidx >= 0 && xidx < len_)
+            int xidx;
+            r = str_to_index(xidx, s, e - 1);
+            if(!r
+                && xidx >= 0
+                && xidx < len_)
             {
                 if(type_ == data_type::object)
                 {
@@ -574,6 +576,8 @@ std::ostream& operator<<(std::ostream& os, const value* val)
     {
         os << '[';
     }
+
+    //jgb_debug("{ %s }", val->uplink_->name_);
 
     switch (val->type_)
     {
@@ -1155,22 +1159,18 @@ int config::get(const char* path, value** val, int* idx)
     r = jpath_parse(&s, &e);
     if(!r)
     {
-        if(*s != '\0')
+        if(*s != '\0'
+            && *s != '['
+            && *s != '/')
         {
-            int xidx;
-            r = str_to_index(xidx, s, e);
-            //jgb_debug("{ r = %d, s = %.*s }", r, (int)(e - s), s);
-            if(r)
+            pair* pr = find(s, (int)(e - s));
+            if(pr)
             {
-                pair* pr = find(s, (int)(e - s));
-                if(pr)
-                {
-                    return pr->value_->get(e, val, idx);
-                }
-                else
-                {
-                    return JGB_ERR_NOT_FOUND;
-                }
+                return pr->value_->get(e, val, idx);
+            }
+            else
+            {
+                return JGB_ERR_NOT_FOUND;
             }
         }
     }
@@ -1434,9 +1434,28 @@ int config::get(const char* path, std::string& sval)
 
 int config::get(const char* path, config** cval)
 {
+    if(!path || !cval)
+    {
+        jgb_assert(0);
+        return JGB_ERR_INVALID;
+    }
+
     int r;
-    int idx;
+    const char* s = path;
+    const char* e;
+
+    r = jpath_parse(&s, &e);
+    if(!r)
+    {
+        if(*s == '/' || *s == '\0')
+        {
+            *cval = this;
+            return 0;
+        }
+    }
+
     value* pval;
+    int idx;
 
     r = get(path, &pval, &idx);
     if(!r)

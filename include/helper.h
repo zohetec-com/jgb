@@ -32,6 +32,7 @@ namespace jgb
 
 int str_to_index(int& idx, const char* s, const char* e = nullptr);
 int jpath_parse(const char** start, const char** end);
+int path_get_part(const char** start, const char** end);
 bool is_equal(double a, double b, double epsilon = 1e-6);
 int stoi(const std::string& str, int& v);
 int stoll(const std::string& str, int64_t& v);

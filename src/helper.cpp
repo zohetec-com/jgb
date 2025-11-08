@@ -55,51 +55,115 @@ int str_to_index(int& idx, const char* s, const char* e)
     return JGB_ERR_INVALID;
 }
 
-// 输入不能包含有空格！
+enum class jpath_parse_state
+{
+    init,
+    s1, // got '/'
+    s2, // got '['
+    s3, // got others
+};
+
 int jpath_parse(const char** start, const char** end)
 {
     if(start && *start)
     {
         const char* p = *start;
-        // 跳过开始的 "///"
-        while(*p == '/' && *p != '\0')
+        jpath_parse_state state = jpath_parse_state::init;
+
+        while(true)
         {
-            ++ p;
-        }
-        jgb_assert(*p != '/');
-        *start = p;
-        if(end)
-        {
-            const char* s = p;
-            while(true)
+            switch(state)
             {
-                if(*p == '/'
-                        || *p == '\0')
+            case jpath_parse_state::init:
+                switch(*p)
                 {
+                case '/':
+                    state = jpath_parse_state::s1;
+                    ++ p;
+                    break;
+                case '[':
+                    state = jpath_parse_state::s2;
+                    ++ p;
+                    break;
+                case ']':
+                    return JGB_ERR_INVALID;
+                case '\0':
+                    if(end)
+                    {
+                        *end = p;
+                    }
+                    return 0;
+                default:
+                    state = jpath_parse_state::s3;
+                    ++ p;
                     break;
                 }
-
-                if(*s == '[')
+                break;
+            case jpath_parse_state::s1:
+                switch(*p)
                 {
-                    if(*p == ']')
+                case '/':
+                    ++ p;
+                    break;
+                case '[':
+                    *start = p;
+                    state = jpath_parse_state::s2;
+                    ++ p;
+                    break;
+                case ']':
+                    return JGB_ERR_INVALID;
+                case '\0':
+                    *start = p - 1;
+                    if(end)
                     {
+                        *end = p;
+                    }
+                    return 0;
+                default:
+                    *start = p;
+                    state = jpath_parse_state::s3;
+                    ++ p;
+                    break;
+                }
+                break;
+            case jpath_parse_state::s2:
+                switch(*p)
+                {
+                case '/':
+                case '[':
+                case '\0':
+                    return JGB_ERR_INVALID;
+                case ']':
+                    if(end)
+                    {
+                        *end = p + 1;
+                    }
+                    return 0;
+                default:
+                    ++ p;
+                    break;
+                }
+                break;
+            case jpath_parse_state::s3:
+                switch(*p)
+                {
+                    case '/':
+                    case '[':
+                    case '\0':
+                        if(end)
+                        {
+                            *end = p;
+                        }
+                        return 0;
+                    case ']':
+                        return JGB_ERR_INVALID;
+                    default:
                         ++ p;
                         break;
-                    }
                 }
-                else
-                {
-                    if(*p == '[')
-                    {
-                        break;
-                    }
-                }
-
-                ++ p;
+                break;
             }
-            *end = p;
         }
-        return 0;
     }
     else
     {
@@ -224,6 +288,37 @@ int put_string(char* buf, int len, int& offset, const char* format, ...)
         }
     }
     return JGB_ERR_FAIL;
+}
+
+int path_get_part(const char** start, const char** end)
+{
+    jgb_assert(start);
+    jgb_assert(*start);
+    jgb_assert(end);
+
+    const char* s = *start;
+
+    // skip leading '/'
+    while (*s == '/')
+    {
+        s++;
+    }
+
+    if(*s == '\0')
+    {
+        return JGB_ERR_NOT_FOUND;
+    }
+
+    const char* p = s;
+    while (*p && *p != '/')
+    {
+        p++;
+    }
+    jgb_assert(p != s);
+
+    *start = s;
+    *end = p;
+    return 0;
 }
 
 } // namespace jgb

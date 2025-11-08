@@ -115,24 +115,28 @@ static void test_jpath_parse()
         jgb_assert(!r);
         jgb_debug("%.*s", (int)(e - s), s);
         jgb_assert(!strncmp("p7", s, (int)(e - s)));
+        jgb_assert((int)(e - s) == 2);
 
         s = e;
         r = jgb::jpath_parse(&s, &e);
         jgb_assert(!r);
         jgb_debug("%.*s", (int)(e - s), s);
         jgb_assert(!strncmp("p78", s, (int)(e - s)));
+        jgb_assert((int)(e - s) == 3);
 
         s = e;
         r = jgb::jpath_parse(&s, &e);
         jgb_assert(!r);
         jgb_debug("%.*s", (int)(e - s), s);
         jgb_assert(!strncmp("[1]", s, (int)(e - s)));
+        jgb_assert((int)(e - s) == 3);
 
         s = e;
         r = jgb::jpath_parse(&s, &e);
         jgb_assert(!r);
         jgb_debug("%.*s", (int)(e - s), s);
-        jgb_assert(s == e);
+        jgb_assert(!strncmp("/", s, (int)(e - s)));
+        jgb_assert((int)(e - s) == 1);
     }
 
     const char* path2 = nullptr;
@@ -142,9 +146,37 @@ static void test_jpath_parse()
     const char* path3 = "";
     s = path3;
     r = jgb::jpath_parse(&s, &e);
-    jgb_assert(!r);
     jgb_assert(*s == '\0');
-    jgb_assert(*e == '\0');
+    jgb_assert(s = e);
+    jgb_assert(!r);
+
+    const char* path4 = "///";
+    s = path4;
+    r = jgb::jpath_parse(&s, &e);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("/", s, (int)(e - s)));
+    jgb_assert((int)(e - s) == 1);
+
+    const char* path5 = "/";
+    s = path5;
+    r = jgb::jpath_parse(&s, &e);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("/", s, (int)(e - s)));
+    jgb_assert((int)(e - s) == 1);
+
+    const char* path6 = "[2]";
+    s = path6;
+    r = jgb::jpath_parse(&s, &e);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("[2]", s, (int)(e - s)));
+    jgb_assert((int)(e - s) == 3);
+
+    const char* path7 = "p0";
+    s = path7;
+    r = jgb::jpath_parse(&s, &e);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("p0", s, (int)(e - s)));
+    jgb_assert((int)(e - s) == 2);
 }
 
 static void test_stox_fail()
@@ -1309,8 +1341,38 @@ static void test_new_conf()
 #endif
 }
 
+static void test_path_get_part()
+{
+    std::string path1 = "////x/y//z/";
+    int r;
+    const char* s = path1.c_str();
+    const char* e;
+
+    r = jgb::path_get_part(&s, &e);
+    jgb_debug("%.*s", e - s, s);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("x", s, e-s));
+
+    s = e;
+    r = jgb::path_get_part(&s, &e);
+    jgb_debug("%.*s", e - s, s);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("y", s, e-s));
+
+    s = e;
+    r = jgb::path_get_part(&s, &e);
+    jgb_debug("%.*s", e - s, s);
+    jgb_assert(!r);
+    jgb_assert(!strncmp("z", s, e-s));
+
+    s = e;
+    r = jgb::path_get_part(&s, &e);
+    jgb_assert(r);
+}
+
 static int init(void*)
 {
+    test_path_get_part();
     test_put_string();
     // 检查 assert(0) 是否工作。
     //jgb_assert(0);
