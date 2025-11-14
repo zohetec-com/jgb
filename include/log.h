@@ -59,7 +59,7 @@ void jgb_log(enum jgb_log_level level, const char* fname, int lineno, const char
 
 // 调试的特例
 #define jgb_function()          jgb_debug("call %s()", __FUNCTION__)
-#define jgb_mark()              jgb_debug("\n")
+#define jgb_mark()              jgb_debug("")
 
 // 错误的特例
 #define jgb_bug(fmt, ...) \
