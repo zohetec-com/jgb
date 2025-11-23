@@ -672,10 +672,11 @@ void app::create_instances()
         instances_.push_back(inst);
     }
 }
-app::app(const char* name, jgb_api_t* api, config* conf)
+app::app(const char* name, jgb_api_t* api, config* conf, schema *schema)
     : name_(name),
       api_(api),
       conf_(conf),
+      schema_(schema),
       normal_(false)
 {
     create_instances();
@@ -683,6 +684,7 @@ app::app(const char* name, jgb_api_t* api, config* conf)
 
 app::~app()
 {
+    delete schema_;
     // 前置条件：已经调用过 release()。
     jgb_assert(instances_.empty());
 }
@@ -843,7 +845,29 @@ int core::install(const char* name, jgb_api_t* api)
             conf = new config;
         }
 
-        app* papp = new app(name, api, conf);
+        std::string schema_file_path = std::string(conf_dir_) + '/' + name + ".schema";
+        config* schema_conf = config_factory::create(schema_file_path.c_str());
+        schema* schema = nullptr;
+        if(schema_conf)
+        {
+            schema = schema_factory::create(schema_conf);
+            delete schema_conf;
+        }
+        if(schema)
+        {
+            schema::result res;
+            r = schema->validate(conf, &res);
+            if(r)
+            {
+                jgb_warning("schema validate failed. { app.name = %s }", name);
+                for(auto i: res.error_)
+                {
+                    jgb_raw("  %d %s\n", i.code, i.path.c_str());
+                }
+            }
+        }
+
+        app* papp = new app(name, api, conf, schema);
         app_conf_->create(name, papp->conf_);
         app_.push_back(papp);
         papp->init();
