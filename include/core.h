@@ -27,6 +27,7 @@
 #include <jgb/config.h>
 #include <jgb/buffer.h>
 #include <jgb/app.h>
+#include <jgb/schema.h>
 #include <vector>
 #include <list>
 
@@ -150,7 +151,7 @@ private:
 class app
 {
 public:
-    app(const char* name, jgb_api_t* api, config* conf);
+    app(const char* name, jgb_api_t* api, config* conf, schema* schema);
     ~app();
 
     int init();
@@ -159,6 +160,7 @@ public:
     std::string name_;
     jgb_api_t* api_;
     config* conf_;
+    schema* schema_;
     std::vector<instance*> instances_;
     bool normal_; // is init ok
 
