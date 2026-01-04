@@ -50,7 +50,7 @@ static void test_object_value()
 {
     jgb::value* val = new jgb::value(jgb::value::data_type::object, 2);
     int r;
-    r = val->conf_[0]->create("a", 1L);
+    r = val->conf_[0]->create("a", (int64_t) 1L);
     jgb_assert(!r);
     std::ostringstream os;
     os << val;
@@ -924,7 +924,7 @@ static void test_create()
     jgb_assert(!r);
     r = conf.create("id", "abc123");
     jgb_assert(!r);
-    r = conf.create("mts", time(NULL));
+    r = conf.create("mts", (int64_t) time(NULL));
     jgb_assert(!r);
     r = conf.create("command", "get /wsapi/v1/cvcam/sync/get_dev_info");
     jgb_assert(!r);
