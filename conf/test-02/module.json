@@ -1,0 +1,7 @@
+{
+    "import":[
+        {"name": ["leak_app",
+		 "test_run"],
+            "library": "jgb.build/test/libtest-core.so"}
+    ]
+}

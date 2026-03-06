@@ -9,6 +9,8 @@ add_library(test-core SHARED
     test-cpp.cpp
     write-buffer-x3.cpp
     test-run.cpp
+    exit-app.cpp
+    leak-app.cpp
     test-no-loops.cpp
     test-log.cpp)
 target_include_directories(test-core PRIVATE ../include ../misc)

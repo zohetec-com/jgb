@@ -1,0 +1,12 @@
+1. 目录
+目录			描述
+----			----
+test			测试用代码
+conf			测试用配置
+conf/test-01		测试 jgb 功能
+conf/test-02		产生内存泄漏，用于验证内存泄漏检查工具使用。
+
+2. 运行
+受 module.json 加载部分动态文件时使用相对路径限制，只能在 jgb 目录下运行测试。
+cd jgb
+jgb-run-debug jgb -D conf/test-01 -v7
