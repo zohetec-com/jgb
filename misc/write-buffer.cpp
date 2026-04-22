@@ -61,7 +61,7 @@ static int tsk_write(void* worker)
 
     if(!len)
     {
-        len = random() % (buf_size);
+        len = random() % (buf_size - jgb::writer::fixed_header_size());
     }
 
     if(len > 0)
