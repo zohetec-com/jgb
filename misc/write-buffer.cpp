@@ -12,11 +12,14 @@ struct context_331c5b56c71b
 
     FILE* fp;
     bool loop;
+    // 读取文件到达结束位置后，在返回文件开始位置前，插入的等待时长，单位毫秒。
+    int delay;
 
     context_331c5b56c71b()
     : fixed_len(0),
       fp(nullptr),
-      loop(false)
+      loop(false),
+      delay(0)
     {
     }
     ~context_331c5b56c71b()
@@ -33,7 +36,7 @@ static int tsk_init(void* worker)
     jgb::worker* w = (jgb::worker*) worker;
     context_331c5b56c71b* ctx = new context_331c5b56c71b;
     std::string filename;
-    w->get_config()->get("input_file", filename);
+    w->get_config()->get("file", filename);
     if(!filename.empty())
     {
         ctx->fp = fopen(filename.c_str(), "rb");
@@ -46,6 +49,7 @@ static int tsk_init(void* worker)
         w->get_config()->get("loop", ctx->loop);
     }
     w->get_config()->get("fixed_len", ctx->fixed_len);
+    w->get_config()->get("delay", ctx->delay);
     w->task_->instance_->user_ = ctx;
     jgb_assert(w->get_writer(0));
     return 0;
@@ -95,6 +99,10 @@ static int tsk_write(void* worker)
                         if(ctx->loop)
                         {
                             rewind(ctx->fp);
+                            if(ctx->delay)
+                            {
+                                jgb::sleep(ctx->delay);
+                            }
                         }
                         else
                         {
