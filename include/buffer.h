@@ -94,7 +94,7 @@ public:
     //~writer();
 
     int request_buffer(uint8_t** buf, int len, int timeout = 100);
-    // len 为载荷数据长度，单位字节; 0 表示取消。
+    // len 为有效的载荷数据的长度，不包括 start_offset，单位字节; 0 表示取消。
     int commit(int len, int start_offset = 0);
     // 提交全部。
     int commit_all();

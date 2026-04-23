@@ -8,7 +8,7 @@
 #include <unistd.h>
 
 // Timer callback function
-void timer_callback(int sig, siginfo_t *si, void *uc) {
+void timer_callback(int sig, siginfo_t*, void*) {
     jgb_notice("Timer expired! Signal received: %d\n", sig);
     // 触发段错误
     *((int*)(intptr_t)0x04) = 0x12345678;
@@ -68,7 +68,7 @@ int init_timer() {
     return 0;
 }
 
-static int init(void* conf)
+static int init(void*)
 {
     init_timer();
     return 0;
