@@ -23,6 +23,7 @@ struct context_33129dfc1a36
     int64_t last_stat_recv_frames;
 
     FILE* fp;
+    int count;
 
     context_33129dfc1a36()
         : dump(false),
@@ -35,7 +36,8 @@ struct context_33129dfc1a36
         stat_recv_frames(0L),
         last_stat_recv_bytes(0L),
         last_stat_recv_frames(0L),
-        fp(nullptr)
+        fp(nullptr),
+        count(0)
     {
         last_stat_time =  (struct timespec) {0,0};
     }
@@ -56,7 +58,7 @@ static int tsk_init(void* worker)
     std::string filename;
     w->task_->instance_->user_ = ctx;
     jgb_assert(w->get_reader(0));
-    w->get_config()->get("output_file", filename);
+    w->get_config()->get("file", filename);
     if(!filename.empty())
     {
         ctx->fp = fopen(filename.c_str(), "wb");
@@ -67,6 +69,7 @@ static int tsk_init(void* worker)
             return JGB_ERR_IO;
         }
     }
+    w->get_config()->get("count", ctx->count);
     w->get_config()->get("dump", ctx->dump);
     w->get_config()->get("is_text", ctx->is_text);
     w->get_config()->get("check", ctx->check);
@@ -123,6 +126,10 @@ static int tsk_read(void* worker)
         if(ctx->sleep_ms > 0)
         {
             jgb::sleep(ctx->sleep_ms);
+        }
+        if(ctx->count && ctx->stat_recv_frames >= ctx->count)
+        {
+            return JGB_ERR_END;
         }
     }
     return 0;
